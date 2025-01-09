@@ -3,10 +3,8 @@ import { NextResponse } from 'next/server';
 import {
   getAccountData,
   getSummonerData,
-  getMatchIds,
-  getMatchInfo,
+  getLiveGameData,
 } from '@/lib/riotApiClient';
-import { extractRelevantData } from '@/lib/matchDataUtils';
 
 export async function GET(request: Request) {
   try {
@@ -24,34 +22,24 @@ export async function GET(request: Request) {
 
     console.log(`Fetching data for summoner: ${summonerName}, tag: ${tagLine}, region: ${platform}`);
 
+    // 1. Get Account Info (this gives us PUUID)
     const accountData = await getAccountData(summonerName, tagLine);
     console.log('Account data fetched:', accountData);
 
+    // 2. Get Summoner Data (for additional info)
     const summonerData = await getSummonerData(accountData.puuid, platform);
     console.log('Summoner data fetched:', summonerData);
 
-    const matchIds = await getMatchIds(accountData.puuid);
-    if (matchIds.length === 0) {
-      return NextResponse.json(
-        { error: 'No matches found for this summoner' },
-        { status: 404 }
-      );
-    }
-    const recentMatchId = matchIds[0];
-    console.log('Most recent match ID:', recentMatchId);
-
-    const matchInfo = await getMatchInfo(recentMatchId);
-    console.log('Match information fetched:', matchInfo);
-
-    const relevantData = extractRelevantData(matchInfo);
-    console.log('Relevant data extracted:', relevantData);
+    // 3. Get Live Game Data using PUUID directly
+    const liveGameData = await getLiveGameData(accountData.puuid, platform);
+    console.log('Live game status:', liveGameData ? 'In game' : 'Not in game');
 
     return NextResponse.json({
       account: accountData,
       summoner: summonerData,
-      recentMatchId,
-      matchInfo: relevantData,
+      liveGame: liveGameData
     });
+
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(

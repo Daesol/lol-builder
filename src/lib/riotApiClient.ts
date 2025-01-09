@@ -1,77 +1,75 @@
 // src/lib/riotApiClient.ts
 
-const RIOT_API_KEY = process.env.RIOT_API_KEY?.trim();
-
-if (!RIOT_API_KEY) {
-  throw new Error('RIOT_API_KEY is not configured. Please add it to your environment variables.');
-}
-
-const fetchFromRiotAPI = async (url: string) => {
-  const response = await fetch(url, {
-    headers: {
-      'X-Riot-Token': RIOT_API_KEY!,
-    },
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`Error fetching data from Riot API: ${url}`, {
-      status: response.status,
-      body: errorBody,
-    });
-    throw new Error(`Failed to fetch from Riot API: ${response.status}`);
+interface RiotAPIError {
+    status: {
+      message: string;
+      status_code: number;
+    };
   }
-
-  return response.json();
-};
-
-export const getAccountData = async (summonerName: string, tagLine: string) => {
-  const url = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
-    summonerName
-  )}/${encodeURIComponent(tagLine)}`;
-  return fetchFromRiotAPI(url);
-};
-
-export const getSummonerData = async (puuid: string, platform: string) => {
-  const url = `https://${platform.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`;
-  return fetchFromRiotAPI(url);
-};
-
-export const getMatchIds = async (puuid: string) => {
-  const url = `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1`;
-  return fetchFromRiotAPI(url);
-};
-
-export const getMatchInfo = async (matchId: string) => {
-  const url = `https://americas.api.riotgames.com/lol/match/v5/matches/${matchId}`;
-  return fetchFromRiotAPI(url);
-};
-
-// src/lib/riotApiClient.ts
-
-export const getLiveGameData = async (summonerId: string, region: string) => {
+  
+  const fetchFromRiotAPI = async (url: string) => {
     const RIOT_API_KEY = process.env.RIOT_API_KEY;
-    if (!RIOT_API_KEY) {
-      throw new Error('Riot API key not configured');
+    if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
+      throw new Error('Invalid or missing Riot API key');
     }
   
-    const response = await fetch(
-      `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`,
-      {
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
-          'X-Riot-Token': RIOT_API_KEY
+          'X-Riot-Token': RIOT_API_KEY,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        next: { 
+          revalidate: 30 // Cache for 30 seconds
         }
+      });
+  
+      console.log('Request to:', url);
+      console.log('Response status:', response.status);
+  
+      // If 404 for spectator endpoint, return null (player not in game)
+      if (response.status === 404 && url.includes('/spectator/')) {
+        return null;
       }
-    );
   
-    // If 404, it means the player is not in game (this is normal)
-    if (response.status === 404) {
-      return null;
+      const data = await response.json();
+  
+      if (!response.ok) {
+        const error = data as RiotAPIError;
+        console.error('Riot API Error:', {
+          status: response.status,
+          message: error.status?.message || 'Unknown error',
+          url
+        });
+        throw new Error(error.status?.message || `HTTP error! status: ${response.status}`);
+      }
+  
+      return data;
+    } catch (error) {
+      console.error('Error fetching from Riot API:', error);
+      throw error;
     }
+  };
   
-    if (!response.ok) {
-      throw new Error(`Failed to fetch live game data: ${response.status}`);
-    }
+  export const getAccountData = async (summonerName: string, tagLine: string) => {
+    const url = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${encodeURIComponent(tagLine)}`;
+    return fetchFromRiotAPI(url);
+  };
   
-    return response.json();
+  export const getSummonerData = async (puuid: string, region: string) => {
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`;
+    return fetchFromRiotAPI(url);
+  };
+  
+  export const getLiveGameData = async (puuid: string, region: string) => {
+    // Convert region to the correct routing value
+    const routingRegion = region.toLowerCase().includes('na') ? 'americas' :
+                         region.toLowerCase().includes('euw') ? 'europe' :
+                         region.toLowerCase().includes('kr') ? 'asia' :
+                         'americas'; // default to americas
+  
+    const url = `https://${routingRegion}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+    return fetchFromRiotAPI(url);
   };
