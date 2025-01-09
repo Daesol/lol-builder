@@ -8,6 +8,8 @@ export async function GET(request: Request) {
     const tagLine = searchParams.get('tagLine')?.toUpperCase() || 'NA1';
     const platform = (searchParams.get('region') || 'NA1').toUpperCase();
 
+    console.log('Request params:', { summonerName, tagLine, platform });
+
     if (!summonerName) {
       return NextResponse.json(
         { error: 'Summoner name is required' },
@@ -19,50 +21,46 @@ export async function GET(request: Request) {
 
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
       return NextResponse.json({
-        error: 'API key not properly configured',
-        keyDetails: {
-          hasKey: !!RIOT_API_KEY,
-          startsWithRGAPI: RIOT_API_KEY?.startsWith('RGAPI-'),
-          length: RIOT_API_KEY?.length
-        }
+        error: 'API key not properly configured'
       }, { status: 500 });
     }
 
-    // 1. First get Riot Account Info
-    console.log('Fetching account info for:', summonerName, tagLine);
+    // 1. Get Account Info
+    console.log('Fetching account info...');
     const accountUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${encodeURIComponent(tagLine)}`;
+    console.log('Account URL:', accountUrl);
     
     const accountResponse = await fetch(accountUrl, {
-      headers: {
-        'X-Riot-Token': RIOT_API_KEY
-      }
+      headers: { 'X-Riot-Token': RIOT_API_KEY }
     });
 
     if (!accountResponse.ok) {
-      console.log('Account fetch failed:', await accountResponse.text());
+      const accountError = await accountResponse.text();
+      console.error('Account fetch error:', accountError);
       return NextResponse.json({
         error: 'Account not found',
-        details: await accountResponse.json()
+        details: accountError
       }, { status: accountResponse.status });
     }
 
     const accountData = await accountResponse.json();
     console.log('Account data:', accountData);
 
-    // 2. Get Summoner data using PUUID
-    console.log('Fetching summoner data using PUUID:', accountData.puuid);
+    // 2. Get Summoner data
+    console.log('Fetching summoner data...');
     const summonerUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`;
+    console.log('Summoner URL:', summonerUrl);
+
     const summonerResponse = await fetch(summonerUrl, {
-      headers: {
-        'X-Riot-Token': RIOT_API_KEY
-      }
+      headers: { 'X-Riot-Token': RIOT_API_KEY }
     });
 
     if (!summonerResponse.ok) {
-      console.log('Summoner fetch failed:', await summonerResponse.text());
+      const summonerError = await summonerResponse.text();
+      console.error('Summoner fetch error:', summonerError);
       return NextResponse.json({
         error: 'Summoner not found',
-        details: await summonerResponse.json()
+        details: summonerError
       }, { status: summonerResponse.status });
     }
 
@@ -72,10 +70,10 @@ export async function GET(request: Request) {
     // 3. Check for active game
     console.log('Checking for active game...');
     const liveGameUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerData.id}`;
+    console.log('Live game URL:', liveGameUrl);
+
     const liveGameResponse = await fetch(liveGameUrl, {
-      headers: {
-        'X-Riot-Token': RIOT_API_KEY
-      }
+      headers: { 'X-Riot-Token': RIOT_API_KEY }
     });
 
     let liveGameData = null;
@@ -86,19 +84,26 @@ export async function GET(request: Request) {
       gameMessage = 'Player is in game';
       console.log('Live game data:', liveGameData);
     } else {
-      console.log('No active game found:', liveGameResponse.status);
+      const liveGameError = await liveGameResponse.text();
+      console.log('No active game found:', {
+        status: liveGameResponse.status,
+        error: liveGameError
+      });
     }
 
     // Return complete response
-    return NextResponse.json({
+    const response = {
       account: accountData,
       summoner: {
         ...summonerData,
-        name: accountData.gameName // Use the game name from account data
+        name: accountData.gameName
       },
       liveGame: liveGameData,
       message: gameMessage
-    });
+    };
+
+    console.log('Final response:', response);
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Error:', error);
