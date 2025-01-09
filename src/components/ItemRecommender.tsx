@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { ApiResponse, Participant } from '@/types/game';
+import type { ApiResponse, LiveGameParticipant } from '@/types/game';
 
 interface ItemSlotsProps {
   items?: number[];
@@ -150,28 +150,40 @@ const ItemRecommender = () => {
             </div>
           )}
 
-          {/* Match Data */}
-          {data?.matchInfo && data.matchInfo.length > 0 && (
+          {/* Live Game Data */}
+          {data?.liveGame ? (
             <div className="mt-6">
-              <h3 className="text-blue-400 font-semibold mb-4 text-lg">Recent Match Participants</h3>
+              <h3 className="text-blue-400 font-semibold mb-4 text-lg">
+                Live Game - {data.liveGame.gameMode} ({data.liveGame.gameType})
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {data.matchInfo.map((participant: Participant, index: number) => (
+                {data.liveGame.participants.map((participant: LiveGameParticipant) => (
                   <div 
-                    key={index}
-                    className="flex items-center bg-gray-800 p-4 rounded border border-gray-700"
+                    key={participant.summonerId}
+                    className={`flex items-center p-4 rounded border ${
+                      participant.teamId === 100 
+                        ? 'bg-blue-900/30 border-blue-700' 
+                        : 'bg-red-900/30 border-red-700'
+                    }`}
                   >
                     {/* Participant Info */}
                     <div className="flex-1">
                       <h4 className="text-white font-semibold">{participant.summonerName}</h4>
-                      <p className="text-gray-400 text-sm">
-                        K/D/A: {participant.kills} / {participant.deaths} / {participant.assists}
+                      <p className="text-gray-400 text-sm">Champion ID: {participant.championId}</p>
+                      <p className={`text-sm ${participant.teamId === 100 ? 'text-blue-400' : 'text-red-400'}`}>
+                        {participant.teamId === 100 ? 'Blue Team' : 'Red Team'}
                       </p>
                     </div>
-
-                    {/* Items */}
-                    <ItemSlots items={participant.items} />
                   </div>
                 ))}
+              </div>
+
+              {/* Game Duration */}
+              <div className="mt-4 bg-gray-800 p-4 rounded border border-gray-700">
+                <p className="text-gray-300">
+                  Game Duration: {Math.floor(data.liveGame.gameLength / 60)}:
+                  {String(data.liveGame.gameLength % 60).padStart(2, '0')}
+                </p>
               </div>
 
               {/* Build Guide */}
@@ -188,7 +200,13 @@ const ItemRecommender = () => {
                 </ol>
               </div>
             </div>
-          )}
+          ) : data?.summoner ? (
+            <div className="mt-4 bg-gray-800 p-4 rounded border border-gray-700">
+              <p className="text-gray-300">
+                {data.summoner.name} is not currently in a game
+              </p>
+            </div>
+          ) : null}
 
           {/* Debug Info */}
           {data && (
