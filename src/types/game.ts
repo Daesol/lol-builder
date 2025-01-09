@@ -64,3 +64,22 @@ export interface Account {
     };
     liveGame: LiveGame | null;
   }
+
+  export interface ItemData {
+    name: string;
+    description: string;
+    colloq: string;
+    plaintext: string;
+    gold: {
+      base: number;
+      purchasable: boolean;
+      total: number;
+      sell: number;
+    };
+    tags: string[];
+    maps: Record<string, boolean>;
+    stats: Record<string, number>;
+    depth?: number;
+    into?: string[];
+    from?: string[];
+  }

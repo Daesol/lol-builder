@@ -7,7 +7,7 @@ interface RiotAPIError {
     };
   }
   
-  const fetchFromRiotAPI = async (url: string) => {
+  const fetchFromRiotAPI = async (url: string, noCache = false) => {
     const RIOT_API_KEY = process.env.RIOT_API_KEY;
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
       throw new Error('Invalid or missing Riot API key');
@@ -21,9 +21,8 @@ interface RiotAPIError {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        next: { 
-          revalidate: 30
-        }
+        cache: noCache ? 'no-store' : 'default',
+        next: noCache ? undefined : { revalidate: 30 }
       });
   
       console.log('Request to:', url);
@@ -64,9 +63,9 @@ interface RiotAPIError {
     return fetchFromRiotAPI(url);
   };
   
-  export const getLiveGameData = async (puuid: string, region: string) => {
-    // Use platform-specific endpoint for spectator API
-    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
-    console.log('Fetching live game data:', { puuid, region, url });
-    return fetchFromRiotAPI(url);
+  export const getLiveGameData = async (summonerId: string, region: string) => {
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
+    console.log('Fetching live game data:', { summonerId, region, url });
+    // Pass noCache=true for live game data
+    return fetchFromRiotAPI(url, true);
   };
