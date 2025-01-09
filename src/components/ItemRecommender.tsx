@@ -47,7 +47,7 @@ const ItemRecommender = () => {
     <Card className="w-full max-w-2xl mx-auto bg-gray-900 border-gray-800">
       <CardContent className="p-6">
         <div className="space-y-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <Input
               placeholder="Summoner Name"
               value={summonerName}
@@ -58,12 +58,12 @@ const ItemRecommender = () => {
               placeholder="Tag (e.g., NA1)"
               value={tagLine}
               onChange={(e) => setTagLine(e.target.value)}
-              className="w-32 bg-gray-800 border-gray-700"
+              className="w-full sm:w-32 bg-gray-800 border-gray-700"
             />
             <select
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white"
+              className="w-full sm:w-auto px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white"
             >
               <option value="NA1">NA</option>
               <option value="EUW1">EUW</option>
@@ -73,7 +73,7 @@ const ItemRecommender = () => {
             <Button 
               onClick={fetchGameData}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
             >
               {loading ? 'Loading...' : 'Search'}
             </Button>
@@ -99,17 +99,17 @@ const ItemRecommender = () => {
             </Alert>
           )}
 
-          {data?.liveGame && (
+          {data?.liveGame && data.liveGame.participants && data.liveGame.participants.length > 0 && (
             <div className="bg-gray-800 p-4 rounded border border-gray-700">
               <h3 className="font-semibold mb-2 text-blue-400">Live Game Info</h3>
               <p className="text-gray-300">Game Type: {data.liveGame.gameType}</p>
               <p className="text-gray-300">Game Mode: {data.liveGame.gameMode}</p>
               <div className="mt-4">
                 <h4 className="font-medium text-blue-400 mb-2">Players:</h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {data.liveGame.participants.map((participant: Participant) => (
                     <div 
-                      key={participant.summonerId}
+                      key={participant.summonerId || Math.random()}
                       className="p-2 bg-gray-700 rounded border border-gray-600 text-gray-200"
                     >
                       {participant.summonerName}
