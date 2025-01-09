@@ -2,7 +2,7 @@
 
 // src/components/ItemRecommender.tsx
 import React, { useState } from 'react';
-import type { GameInfo } from '../types/components';
+import type { GameInfo } from '@/types/components';
 
 interface ItemRecommenderProps {
   initialRegion?: string;
@@ -33,7 +33,12 @@ const ItemRecommender: React.FC<ItemRecommenderProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch game data');
+        const errorMessage = data.error || `HTTP error! status: ${response.status}`;
+        console.error('API Response Error:', {
+          status: response.status,
+          data: data
+        });
+        throw new Error(errorMessage);
       }
 
       setGameInfo(data);
