@@ -19,19 +19,18 @@ export async function GET(request: Request) {
 
     const RIOT_API_KEY = process.env.RIOT_API_KEY?.trim();
 
-    if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
+    if (!RIOT_API_KEY || !RIOT_API_KEY.startsWith('RGAPI-')) {
+      console.error('Invalid Riot API Key');
       return NextResponse.json(
         { error: 'API key not properly configured' },
         { status: 500 }
       );
     }
 
-    // 1. Get Account Info
-    console.log('Fetching account info...');
+    // Fetch account data
     const accountUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
       summonerName
     )}/${encodeURIComponent(tagLine)}`;
-
     const accountResponse = await fetch(accountUrl, {
       headers: { 'X-Riot-Token': RIOT_API_KEY },
     });
@@ -48,10 +47,8 @@ export async function GET(request: Request) {
     const accountData = await accountResponse.json();
     console.log('Account data:', accountData);
 
-    // 2. Get Summoner data
-    console.log('Fetching summoner data...');
+    // Fetch summoner data
     const summonerUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`;
-
     const summonerResponse = await fetch(summonerUrl, {
       headers: { 'X-Riot-Token': RIOT_API_KEY },
     });
@@ -68,11 +65,8 @@ export async function GET(request: Request) {
     const summonerData = await summonerResponse.json();
     console.log('Summoner data:', summonerData);
 
-    // 3. Check for active game
-    console.log('Checking for active game...');
+    // Fetch live game data
     const liveGameUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerData.id}`;
-    console.log('Live game URL:', liveGameUrl);
-
     const liveGameResponse = await fetch(liveGameUrl, {
       headers: { 'X-Riot-Token': RIOT_API_KEY },
     });
@@ -85,22 +79,22 @@ export async function GET(request: Request) {
       gameMessage = 'Player is in game';
       console.log('Live game data:', liveGameData);
     } else if (liveGameResponse.status === 404) {
-      console.log('Player not in an active game.');
+      console.log('No active game found for this summoner.');
     } else {
       const liveGameError = await liveGameResponse.text();
-      console.error('Live game fetch error:', liveGameError);
+      console.error('Error fetching live game data:', liveGameError);
       return NextResponse.json(
         { error: 'Error fetching live game data', details: liveGameError },
         { status: liveGameResponse.status }
       );
     }
 
-    // Return complete response
+    // Return the aggregated response
     const response = {
       account: accountData,
       summoner: {
         ...summonerData,
-        name: accountData.gameName,
+        name: accountData.gameName || summonerData.name,
       },
       liveGame: liveGameData,
       message: gameMessage,
