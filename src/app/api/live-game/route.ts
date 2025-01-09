@@ -1,11 +1,25 @@
 // src/app/api/live-game/route.ts
 import { NextResponse } from 'next/server';
 
+// Platform to regional routing map
+const PLATFORM_TO_REGIONAL = {
+  'NA1': 'AMERICAS',
+  'BR1': 'AMERICAS',
+  'LA1': 'AMERICAS',
+  'LA2': 'AMERICAS',
+  'EUW1': 'EUROPE',
+  'EUN1': 'EUROPE',
+  'TR1': 'EUROPE',
+  'RU': 'EUROPE',
+  'KR': 'ASIA',
+  'JP1': 'ASIA'
+};
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const summonerName = searchParams.get('summoner');
-    const region = (searchParams.get('region') || 'NA1').toUpperCase();
+    const platform = (searchParams.get('region') || 'NA1').toUpperCase();
 
     if (!summonerName) {
       return NextResponse.json(
@@ -27,8 +41,8 @@ export async function GET(request: Request) {
       }, { status: 500 });
     }
 
-    // Use the platform routing (na1, euw1, etc.) for the API call
-    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`;
+    // Use regional routing for the API call
+    const url = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${platform}`;
     
     console.log('Making request to:', url);
 
@@ -65,7 +79,19 @@ export async function GET(request: Request) {
       }, { status: response.status });
     }
 
-    return NextResponse.json(responseData);
+    // After getting the account info, get summoner details
+    const puuid = responseData.puuid;
+    const summonerUrl = `https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`;
+    
+    const summonerResponse = await fetch(summonerUrl, {
+      headers: {
+        'X-Riot-Token': RIOT_API_KEY
+      }
+    });
+
+    const summonerData = await summonerResponse.json();
+    return NextResponse.json(summonerData);
+
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
