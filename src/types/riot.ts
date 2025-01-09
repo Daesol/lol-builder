@@ -10,6 +10,12 @@ export interface Summoner {
     summonerLevel: number;
   }
   
+  // Define the game customization object type
+  interface GameCustomizationObject {
+    category: string;
+    content: string;
+  }
+  
   export interface LiveGameParticipant {
     teamId: number;
     spell1Id: number;
@@ -17,7 +23,8 @@ export interface Summoner {
     championId: number;
     summonerId: string;
     summonerName: string;
-    gameCustomizationObjects: any[];
+    // Replace 'any[]' with proper type
+    gameCustomizationObjects: GameCustomizationObject[];
     bot: boolean;
     perks: {
       perkIds: number[];
@@ -45,4 +52,3 @@ export interface Summoner {
     gameStartTime: number;
     gameLength: number;
   }
-  
