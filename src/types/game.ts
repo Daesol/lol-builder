@@ -6,17 +6,33 @@ export interface Account {
     tagLine: string;
   }
   
-  export interface MatchParticipant {
+export interface Participant {
     summonerName: string;
     kills: number;
     deaths: number;
     assists: number;
-    items: number[];
+    items?: number[];  // Make items optional
+    championId?: number;
+    teamId?: number;
+    gold?: number;     // Add gold to track purchasing power
+  }
+  
+  export interface MatchInfo {
+    participants: Participant[];
+    gameMode?: string;
+    gameType?: string;
+  }
+  
+  export interface MatchData {
+    info: MatchInfo;
+    metadata?: {
+      matchId: string;
+    };
   }
   
   export interface ApiResponse {
     account: Account;
-    matchInfo: MatchParticipant[];
+    matchInfo: Participant[];
     recentMatchId: string;
     summoner: {
       accountId: string;

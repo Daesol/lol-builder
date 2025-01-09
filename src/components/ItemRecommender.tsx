@@ -7,7 +7,53 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { ApiResponse, MatchParticipant } from '@/types/game';
+import type { ApiResponse, Participant } from '@/types/game';
+
+interface ItemSlotsProps {
+  items?: number[];
+  onItemClick?: (itemId: number) => void;
+}
+
+const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [], onItemClick }) => {
+  // Always show 6 slots
+  const slots = Array(6).fill(null);
+  
+  // Fill available items into slots
+  items.forEach((item, index) => {
+    if (index < 6) slots[index] = item;
+  });
+
+  return (
+    <div className="ml-4 grid grid-cols-3 gap-1">
+      {slots.map((itemId, idx) => (
+        <div 
+          key={idx} 
+          className={`relative w-8 h-8 rounded cursor-pointer
+            ${!itemId ? 'bg-gray-800 border border-gray-700 hover:bg-gray-700' : 'hover:opacity-80'}
+          `}
+          onClick={() => itemId && onItemClick?.(itemId)}
+        >
+          {itemId ? (
+            <Image
+              src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/${itemId}.png`}
+              alt={`Item ${itemId}`}
+              width={32}
+              height={32}
+              className="rounded"
+              onError={() => {
+                console.error(`Failed to load item image: ${itemId}`);
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+              {idx + 1}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const ItemRecommender = () => {
   const [summonerName, setSummonerName] = useState('');
@@ -16,6 +62,7 @@ const ItemRecommender = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ApiResponse | null>(null);
+  const [selectedItem, setSelectedItem] = useState<number | null>(null);
 
   const fetchGameData = async () => {
     if (!summonerName.trim()) {
@@ -27,6 +74,7 @@ const ItemRecommender = () => {
     setError(null);
 
     try {
+      console.log('Fetching data for:', summonerName, tagLine, region);
       const response = await fetch(
         `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}`
       );
@@ -47,14 +95,16 @@ const ItemRecommender = () => {
     }
   };
 
-  const getItemImageUrl = (itemId: number): string =>
-    `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/${itemId}.png`;
+  const handleItemClick = (itemId: number) => {
+    setSelectedItem(itemId);
+    // TODO: Show item details or build path
+  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto bg-gray-900 border-gray-800">
       <CardContent className="p-6">
         <div className="space-y-4">
-          {/* Input Section */}
+          {/* Search Section */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Input
               placeholder="Summoner Name"
@@ -99,7 +149,7 @@ const ItemRecommender = () => {
             <div className="mt-6">
               <h3 className="text-blue-400 font-semibold mb-4 text-lg">Match Participants</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {data.matchInfo.map((participant: MatchParticipant, index: number) => (
+                {data.matchInfo.map((participant: Participant, index: number) => (
                   <div 
                     key={index}
                     className="flex items-center bg-gray-800 p-4 rounded border border-gray-700"
@@ -110,32 +160,44 @@ const ItemRecommender = () => {
                       <p className="text-gray-400 text-sm">
                         K/D/A: {participant.kills} / {participant.deaths} / {participant.assists}
                       </p>
+                      {participant.gold && (
+                        <p className="text-yellow-400 text-sm">
+                          Gold: {participant.gold.toLocaleString()}
+                        </p>
+                      )}
                     </div>
 
                     {/* Items */}
-                    <div className="ml-4 grid grid-cols-3 gap-1">
-                      {participant.items.map((itemId, idx) => (
-                        <div key={idx} className="relative w-8 h-8">
-                          {itemId ? (
-                            <Image
-                              src={getItemImageUrl(itemId)}
-                              alt={`Item ${itemId}`}
-                              width={32}
-                              height={32}
-                              className="rounded"
-                              onError={() => {
-                                console.error(`Failed to load item image: ${itemId}`);
-                              }}
-                            />
-                          ) : (
-                            <div className="w-8 h-8 bg-gray-700 rounded" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <ItemSlots 
+                      items={participant.items} 
+                      onItemClick={handleItemClick}
+                    />
                   </div>
                 ))}
               </div>
+
+              {/* Build Guide */}
+              <div className="mt-6 bg-gray-800 p-4 rounded border border-gray-700">
+                <h4 className="text-blue-400 font-semibold mb-2">Item Build Guide</h4>
+                <p className="text-gray-300 text-sm">
+                  Empty slots indicate available item positions. Typical build order:
+                </p>
+                <ol className="list-decimal list-inside text-gray-300 text-sm mt-2">
+                  <li>Starting items (Slot 1)</li>
+                  <li>Core items (Slots 2-3)</li>
+                  <li>Boots (Usually slot 4)</li>
+                  <li>Situational items (Slots 5-6)</li>
+                </ol>
+              </div>
+            </div>
+          )}
+
+          {/* Item Details (when an item is selected) */}
+          {selectedItem && (
+            <div className="mt-4 p-4 bg-gray-800 rounded border border-gray-700">
+              <h4 className="text-blue-400 font-semibold mb-2">Item Details</h4>
+              <p className="text-gray-300">Item ID: {selectedItem}</p>
+              {/* TODO: Add more item details */}
             </div>
           )}
 
