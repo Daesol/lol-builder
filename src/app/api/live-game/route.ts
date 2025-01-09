@@ -1,20 +1,6 @@
 // src/app/api/live-game/route.ts
 import { NextResponse } from 'next/server';
 
-// Platform to regional routing map
-const PLATFORM_TO_REGIONAL = {
-  'NA1': 'AMERICAS',
-  'BR1': 'AMERICAS',
-  'LA1': 'AMERICAS',
-  'LA2': 'AMERICAS',
-  'EUW1': 'EUROPE',
-  'EUN1': 'EUROPE',
-  'TR1': 'EUROPE',
-  'RU': 'EUROPE',
-  'KR': 'ASIA',
-  'JP1': 'ASIA'
-};
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
