@@ -14,42 +14,56 @@ export async function GET(request: Request) {
       );
     }
 
-    const RIOT_API_KEY = process.env.RIOT_API_KEY;
+    const RIOT_API_KEY = process.env.RIOT_API_KEY?.trim(); // Trim any whitespace
 
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
-      return NextResponse.json(
-        { error: 'API key not properly configured' },
-        { status: 500 }
-      );
+      return NextResponse.json({
+        error: 'API key format invalid',
+        keyDetails: {
+          hasKey: !!RIOT_API_KEY,
+          startsWithRGAPI: RIOT_API_KEY?.startsWith('RGAPI-'),
+          length: RIOT_API_KEY?.length
+        }
+      }, { status: 500 });
     }
 
-    const response = await fetch(
-      `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`,
-      {
-        method: 'GET',
-        headers: {
-          'X-Riot-Token': RIOT_API_KEY
-        }
+    // Use exactly the same format as Postman
+    const url = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Riot-Token': RIOT_API_KEY,
+        'Accept': 'application/json'
       }
-    );
+    });
+
+    const responseText = await response.text();
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch {
+      responseData = responseText;
+    }
 
     if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json(
-        { 
-          error: `API Response: ${response.status} - ${errorText}`,
-          details: {
-            status: response.status,
-            headers: Object.fromEntries(response.headers.entries()),
-            body: errorText
+      return NextResponse.json({
+        error: `API Response: ${response.status}`,
+        details: {
+          url: url,
+          status: response.status,
+          headers: Object.fromEntries(response.headers.entries()),
+          response: responseData,
+          keyInfo: {
+            hasKey: !!RIOT_API_KEY,
+            startsWithRGAPI: RIOT_API_KEY.startsWith('RGAPI-'),
+            length: RIOT_API_KEY.length
           }
-        },
-        { status: response.status }
-      );
+        }
+      }, { status: response.status });
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
