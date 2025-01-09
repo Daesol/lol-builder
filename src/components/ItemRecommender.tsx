@@ -35,6 +35,7 @@ const ItemRecommender = () => {
         throw new Error(result.error || 'An error occurred');
       }
 
+      console.log('API Response:', result);
       setData(result);
     } catch (err) {
       console.error('Fetch Error:', err);
@@ -93,49 +94,75 @@ const ItemRecommender = () => {
             <div className="mt-6">
               <h3 className="text-blue-400 font-semibold mb-4 text-lg">Live Game Participants</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {data.liveGame.participants.map((participant: Participant) => (
-                  <div 
-                    key={participant.summonerId} 
-                    className="flex items-center bg-gray-800 p-4 rounded border border-gray-700"
-                  >
-                    {/* Profile Image */}
-                    <div className="flex-shrink-0">
-                      <img
-                        src={`https://ddragon.leagueoflegends.com/cdn/13.1.1/img/profileicon/${participant.championId}.png`}
-                        alt={participant.summonerName}
-                        className="w-16 h-16 rounded-full"
-                      />
-                    </div>
+                {data.liveGame.participants.map((participant: Participant) => {
+                  // Debugging URLs and Participant Data
+                  const profileIconUrl = `https://ddragon.leagueoflegends.com/cdn/13.1.1/img/profileicon/${participant.championId}.png`;
+                  const items = [
+                    participant.item0,
+                    participant.item1,
+                    participant.item2,
+                    participant.item3,
+                    participant.item4,
+                    participant.item5,
+                  ].filter((item) => item);
 
-                    {/* Participant Info */}
-                    <div className="ml-4 flex-1">
-                      <h4 className="text-white font-semibold">{participant.summonerName}</h4>
-                      <p className="text-gray-400 text-sm">
-                        Team: {participant.teamId === 100 ? 'Blue' : 'Red'}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        Champion ID: {participant.championId}
-                      </p>
-                      <p className="text-green-400 text-sm font-bold">
-                        {participant.kills} / {participant.deaths} / {participant.assists} (K/D/A)
-                      </p>
-                    </div>
+                  console.log('Participant:', participant);
+                  console.log('Profile Icon URL:', profileIconUrl);
+                  console.log('Items:', items);
 
-                    {/* Items */}
-                    <div className="ml-4 grid grid-cols-3 gap-1">
-                      {[participant.item0, participant.item1, participant.item2, participant.item3, participant.item4, participant.item5]
-                        .filter((item) => item)
-                        .map((item, index) => (
-                          <img
-                            key={index}
-                            src={`https://ddragon.leagueoflegends.com/cdn/13.1.1/img/item/${item}.png`}
-                            alt={`Item ${item}`}
-                            className="w-8 h-8 rounded"
-                          />
-                        ))}
+                  return (
+                    <div 
+                      key={participant.summonerId} 
+                      className="flex items-center bg-gray-800 p-4 rounded border border-gray-700"
+                    >
+                      {/* Profile Image */}
+                      <div className="flex-shrink-0">
+                        <img
+                          src={profileIconUrl}
+                          alt={participant.summonerName}
+                          className="w-16 h-16 rounded-full"
+                          onError={() =>
+                            console.error('Failed to load profile icon:', profileIconUrl)
+                          }
+                        />
+                      </div>
+
+                      {/* Participant Info */}
+                      <div className="ml-4 flex-1">
+                        <h4 className="text-white font-semibold">{participant.summonerName}</h4>
+                        <p className="text-gray-400 text-sm">
+                          Team: {participant.teamId === 100 ? 'Blue' : 'Red'}
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          Champion ID: {participant.championId}
+                        </p>
+                        <p className="text-green-400 text-sm font-bold">
+                          {participant.kills} / {participant.deaths} / {participant.assists} (K/D/A)
+                        </p>
+                      </div>
+
+                      {/* Items */}
+                      <div className="ml-4 grid grid-cols-3 gap-1">
+                        {items.map((item, index) => {
+                          const itemImageUrl = `https://ddragon.leagueoflegends.com/cdn/13.1.1/img/item/${item}.png`;
+                          console.log('Item Image URL:', itemImageUrl);
+
+                          return (
+                            <img
+                              key={index}
+                              src={itemImageUrl}
+                              alt={`Item ${item}`}
+                              className="w-8 h-8 rounded"
+                              onError={() =>
+                                console.error('Failed to load item image:', itemImageUrl)
+                              }
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
