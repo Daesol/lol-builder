@@ -7,23 +7,49 @@ export async function GET(request: Request) {
     const summonerName = searchParams.get('summoner');
     const region = searchParams.get('region')?.toLowerCase() || 'na1';
 
+    if (!summonerName) {
+      return NextResponse.json(
+        { error: 'Summoner name is required' },
+        { status: 400 }
+      );
+    }
+
     const RIOT_API_KEY = process.env.RIOT_API_KEY;
 
-    // Debug logging
-    console.log('API Key exists:', !!RIOT_API_KEY);
-    console.log('API Key starts with:', RIOT_API_KEY?.substring(0, 7));
-    console.log('Request URL:', `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`);
+    if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
+      return NextResponse.json(
+        { error: 'API key not properly configured' },
+        { status: 500 }
+      );
+    }
 
-    // First, let's try to make a test response to verify our environment
-    return NextResponse.json({
-      debug: {
-        hasApiKey: !!RIOT_API_KEY,
-        apiKeyPrefix: RIOT_API_KEY?.substring(0, 7),
-        requestedSummoner: summonerName,
-        requestedRegion: region,
+    const response = await fetch(
+      `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`,
+      {
+        method: 'GET',
+        headers: {
+          'X-Riot-Token': RIOT_API_KEY
+        }
       }
-    });
+    );
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { 
+          error: `API Response: ${response.status} - ${errorText}`,
+          details: {
+            status: response.status,
+            headers: Object.fromEntries(response.headers.entries()),
+            body: errorText
+          }
+        },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
