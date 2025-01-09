@@ -23,7 +23,8 @@ export interface Account {
     content: string;
   }
   
-  export interface LiveGameParticipant {
+// src/types/game.ts
+export interface LiveGameParticipant {
     teamId: number;
     spell1Id: number;
     spell2Id: number;
@@ -32,12 +33,23 @@ export interface Account {
     summonerName: string;
     bot: boolean;
     summonerId: string;
-    gameCustomizationObjects: GameCustomizationObject[];
+    gameCustomizationObjects: {
+      category: string;
+      content: string;
+    }[];
     perks: {
       perkIds: number[];
       perkStyle: number;
       perkSubStyle: number;
     };
+    // Add item fields
+    item0?: number;
+    item1?: number;
+    item2?: number;
+    item3?: number;
+    item4?: number;
+    item5?: number;
+    item6?: number;  // Trinket slot
   }
   
   export interface LiveGame {
