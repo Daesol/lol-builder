@@ -9,14 +9,20 @@ if (!RIOT_API_KEY) {
 const fetchFromRiotAPI = async (url: string) => {
   const response = await fetch(url, {
     headers: {
-      'X-Riot-Token': RIOT_API_KEY!,
+      'X-Riot-Token': RIOT_API_KEY,
     },
   });
+
+  // For 404 in live game endpoint, we return null instead of throwing error
+  if (response.status === 404) {
+    return null;
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();
     console.error(`Error fetching data from Riot API: ${url}`, {
       status: response.status,
+      statusText: response.statusText,
       body: errorBody,
     });
     throw new Error(`Failed to fetch from Riot API: ${response.status}`);
@@ -37,41 +43,36 @@ export const getSummonerData = async (puuid: string, platform: string) => {
   return fetchFromRiotAPI(url);
 };
 
-export const getMatchIds = async (puuid: string) => {
-  const url = `https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1`;
-  return fetchFromRiotAPI(url);
-};
-
-export const getMatchInfo = async (matchId: string) => {
-  const url = `https://americas.api.riotgames.com/lol/match/v5/matches/${matchId}`;
-  return fetchFromRiotAPI(url);
-};
-
-// src/lib/riotApiClient.ts
-
-export const getLiveGameData = async (summonerId: string, region: string) => {
-    const RIOT_API_KEY = process.env.RIOT_API_KEY;
-    if (!RIOT_API_KEY) {
-      throw new Error('Riot API key not configured');
-    }
+export const getLiveGameData = async (summonerId: string, platform: string) => {
+  console.log('Fetching live game data for:', { summonerId, platform });
+  const url = `https://${platform.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
+  console.log('Live game URL:', url);
   
-    const response = await fetch(
-      `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`,
-      {
-        headers: {
-          'X-Riot-Token': RIOT_API_KEY
-        }
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'X-Riot-Token': RIOT_API_KEY
       }
-    );
-  
-    // If 404, it means the player is not in game (this is normal)
+    });
+
+    console.log('Live game response status:', response.status);
+
     if (response.status === 404) {
+      console.log('Player not in game');
       return null;
     }
-  
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Live game error:', errorText);
       throw new Error(`Failed to fetch live game data: ${response.status}`);
     }
-  
-    return response.json();
-  };
+
+    const data = await response.json();
+    console.log('Live game data received:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching live game data:', error);
+    throw error;
+  }
+};
