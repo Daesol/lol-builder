@@ -9,26 +9,23 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { ApiResponse, LiveGameParticipant } from '@/types/game';
 
 interface ItemSlotsProps {
-  items?: number[];
+  items: number[]; // Live Game Data items
 }
 
-const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
+const ItemSlots: React.FC<ItemSlotsProps> = ({ items }) => {
   const getItemImageUrl = (itemId: number): string =>
     `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/${itemId}.png`;
 
-  // Always show 6 slots
-  const slots = Array(6).fill(null);
-  
-  // Fill available items into slots
+  const slots = Array(6).fill(null); // Always show 6 slots
   items.forEach((item, index) => {
     if (index < 6) slots[index] = item;
   });
 
   return (
-    <div className="ml-4 grid grid-cols-3 gap-1">
+    <div className="grid grid-cols-3 gap-1">
       {slots.map((itemId, idx) => (
-        <div 
-          key={idx} 
+        <div
+          key={idx}
           className={`relative w-8 h-8 rounded ${!itemId ? 'bg-gray-800 border border-gray-700' : ''}`}
           title={itemId ? `Item ${itemId}` : `Empty Slot ${idx + 1}`}
         >
@@ -39,8 +36,9 @@ const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
                 alt={`Item ${itemId}`}
                 fill
                 className="rounded object-cover"
-                onError={() => {
+                onError={(e) => {
                   console.error(`Failed to load item image: ${itemId}`);
+                  e.currentTarget.src = '/default-item-icon.png'; // Fallback for broken images
                 }}
               />
             </div>
@@ -138,75 +136,43 @@ const ItemRecommender = () => {
             </Alert>
           )}
 
-          {/* Account Info */}
-          {data?.account && (
-            <div className="bg-gray-800 p-4 rounded border border-gray-700">
-              <h3 className="font-semibold mb-2 text-blue-400">Account Info</h3>
-              <p className="text-gray-300">Game Name: {data.account.gameName}</p>
-              <p className="text-gray-300">Tag Line: {data.account.tagLine}</p>
-              {data.summoner && (
-                <p className="text-gray-300">Level: {data.summoner.summonerLevel}</p>
-              )}
-            </div>
-          )}
-
           {/* Live Game Data */}
-          {data?.liveGame ? (
+          {data?.liveGame && (
             <div className="mt-6">
               <h3 className="text-blue-400 font-semibold mb-4 text-lg">
                 Live Game - {data.liveGame.gameMode} ({data.liveGame.gameType})
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {data.liveGame.participants.map((participant: LiveGameParticipant) => (
-                  <div 
-                    key={participant.summonerId}
-                    className={`flex items-center p-4 rounded border ${
-                      participant.teamId === 100 
-                        ? 'bg-blue-900/30 border-blue-700' 
-                        : 'bg-red-900/30 border-red-700'
-                    }`}
-                  >
-                    {/* Participant Info */}
-                    <div className="flex-1">
-                      <h4 className="text-white font-semibold">{participant.summonerName}</h4>
-                      <p className="text-gray-400 text-sm">Champion ID: {participant.championId}</p>
-                      <p className={`text-sm ${participant.teamId === 100 ? 'text-blue-400' : 'text-red-400'}`}>
-                        {participant.teamId === 100 ? 'Blue Team' : 'Red Team'}
-                      </p>
+                {data.liveGame.participants.map((participant: LiveGameParticipant) => {
+                  const items = participant.gameCustomizationObjects
+                    .filter(obj => obj.category === 'Item')
+                    .map(obj => parseInt(obj.content)); // Adjust parsing based on Riot API schema
+
+                  return (
+                    <div
+                      key={participant.summonerId}
+                      className={`flex items-center p-4 rounded border ${
+                        participant.teamId === 100 
+                          ? 'bg-blue-900/30 border-blue-700' 
+                          : 'bg-red-900/30 border-red-700'
+                      }`}
+                    >
+                      {/* Participant Info */}
+                      <div className="flex-1">
+                        <h4 className="text-white font-semibold">{participant.summonerName}</h4>
+                        <p className="text-gray-400 text-sm">
+                          Champion ID: {participant.championId}
+                        </p>
+                      </div>
+
+                      {/* Items */}
+                      <ItemSlots items={items} />
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Game Duration */}
-              <div className="mt-4 bg-gray-800 p-4 rounded border border-gray-700">
-                <p className="text-gray-300">
-                  Game Duration: {Math.floor(data.liveGame.gameLength / 60)}:
-                  {String(data.liveGame.gameLength % 60).padStart(2, '0')}
-                </p>
-              </div>
-
-              {/* Build Guide */}
-              <div className="mt-6 bg-gray-800 p-4 rounded border border-gray-700">
-                <h4 className="text-blue-400 font-semibold mb-2">Item Build Guide</h4>
-                <p className="text-gray-300 text-sm">
-                  Empty slots indicate available item positions. Typical build order:
-                </p>
-                <ol className="list-decimal list-inside text-gray-300 text-sm mt-2">
-                  <li>Starting items (Slot 1)</li>
-                  <li>Core items (Slots 2-3)</li>
-                  <li>Boots (Usually slot 4)</li>
-                  <li>Situational items (Slots 5-6)</li>
-                </ol>
+                  );
+                })}
               </div>
             </div>
-          ) : data?.summoner ? (
-            <div className="mt-4 bg-gray-800 p-4 rounded border border-gray-700">
-              <p className="text-gray-300">
-                {data.summoner.name} is not currently in a game
-              </p>
-            </div>
-          ) : null}
+          )}
 
           {/* Debug Info */}
           {data && (
