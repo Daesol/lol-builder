@@ -22,15 +22,16 @@ interface RiotAPIError {
           'Content-Type': 'application/json'
         },
         next: { 
-          revalidate: 30 // Cache for 30 seconds
+          revalidate: 30
         }
       });
   
       console.log('Request to:', url);
       console.log('Response status:', response.status);
   
-      // If 404 for spectator endpoint, return null (player not in game)
+      // Handle 404 for spectator endpoint
       if (response.status === 404 && url.includes('/spectator/')) {
+        console.log('Player not in game');
         return null;
       }
   
@@ -64,12 +65,8 @@ interface RiotAPIError {
   };
   
   export const getLiveGameData = async (puuid: string, region: string) => {
-    // Convert region to the correct routing value
-    const routingRegion = region.toLowerCase().includes('na') ? 'americas' :
-                         region.toLowerCase().includes('euw') ? 'europe' :
-                         region.toLowerCase().includes('kr') ? 'asia' :
-                         'americas'; // default to americas
-  
-    const url = `https://${routingRegion}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+    // Use platform-specific endpoint for spectator API
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+    console.log('Fetching live game data:', { puuid, region, url });
     return fetchFromRiotAPI(url);
   };
