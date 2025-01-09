@@ -1,25 +1,32 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'LoL Item Builder',
-  description: 'League of Legends Item Builder and Game Analysis',
-}
+  title: "LoL Item Builder",
+  description: "League of Legends item builder and game analyzer",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-gray-950 text-gray-100 min-h-screen`}>
-        {children}
+      <body className={`${inter.className} min-h-screen bg-gray-950 text-gray-100`}>
+        <main className="container mx-auto p-4">
+          <nav className="py-4">
+            <h1 className="text-3xl font-bold text-center text-blue-400">
+              LoL Item Builder
+            </h1>
+          </nav>
+          {children}
+        </main>
       </body>
     </html>
-  )
+  );
 }
