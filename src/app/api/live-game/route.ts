@@ -84,8 +84,12 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Unexpected error:', error);
+    
+    // Safely access `error.message`
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
     return NextResponse.json(
-      { error: 'An unexpected error occurred', details: error.message },
+      { error: 'An unexpected error occurred', details: errorMessage },
       { status: 500 }
     );
   }
