@@ -1,4 +1,3 @@
-// src/components/ItemRecommender.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -26,7 +25,6 @@ const ItemRecommender = () => {
     setError(null);
 
     try {
-      console.log('Fetching data for:', summonerName, tagLine, region);
       const response = await fetch(
         `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}`
       );
@@ -37,7 +35,6 @@ const ItemRecommender = () => {
         throw new Error(result.error || 'An error occurred');
       }
 
-      console.log('API Response:', result);
       setData(result);
     } catch (err) {
       console.error('Fetch Error:', err);
@@ -48,9 +45,10 @@ const ItemRecommender = () => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto bg-gray-900 border-gray-800">
+    <Card className="w-full max-w-4xl mx-auto bg-gray-900 border-gray-800">
       <CardContent className="p-6">
         <div className="space-y-4">
+          {/* Input Section */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Input
               placeholder="Summoner Name"
@@ -83,61 +81,66 @@ const ItemRecommender = () => {
             </Button>
           </div>
 
+          {/* Error Message */}
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          {data?.account && (
-            <div className="bg-gray-800 p-4 rounded border border-gray-700 mt-4">
-              <h3 className="font-semibold mb-2 text-blue-400">Account Info</h3>
-              <p className="text-gray-300">Game Name: {data.account.gameName}</p>
-              <p className="text-gray-300">Tag Line: {data.account.tagLine}</p>
-            </div>
-          )}
-
-          {data?.summoner && (
-            <div className="bg-gray-800 p-4 rounded border border-gray-700 mt-4">
-              <h3 className="font-semibold mb-2 text-blue-400">Summoner Info</h3>
-              <p className="text-gray-300">Name: {data.summoner.name || data.account?.gameName}</p>
-              <p className="text-gray-300">Level: {data.summoner.summonerLevel}</p>
-              <p className="text-gray-300">ID: {data.summoner.id}</p>
-              <p className="text-gray-300">PUUID: {data.summoner.puuid}</p>
-            </div>
-          )}
-
-          {data?.message && (
-            <Alert className="mt-4">
-              <AlertDescription>{data.message}</AlertDescription>
-            </Alert>
-          )}
-
-          {data?.liveGame && data.liveGame.participants && data.liveGame.participants.length > 0 && (
-            <div className="bg-gray-800 p-4 rounded border border-gray-700 mt-4">
-              <h3 className="font-semibold mb-2 text-blue-400">Live Game Info</h3>
-              <p className="text-gray-300">Game Type: {data.liveGame.gameType}</p>
-              <p className="text-gray-300">Game Mode: {data.liveGame.gameMode}</p>
-              <p className="text-gray-300">Game ID: {data.liveGame.gameId}</p>
-              <div className="mt-4">
-                <h4 className="font-medium text-blue-400 mb-2">Players:</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {data.liveGame.participants.map((participant: Participant) => (
-                    <div 
-                      key={participant.summonerId || Math.random()}
-                      className="p-2 bg-gray-700 rounded border border-gray-600 text-gray-200"
-                    >
-                      <p>{participant.summonerName}</p>
-                      <p className="text-sm text-gray-400">Champion ID: {participant.championId}</p>
-                      <p className="text-sm text-gray-400">Team: {participant.teamId === 100 ? 'Blue' : 'Red'}</p>
+          {/* Live Game Participant Data */}
+          {data?.liveGame && data.liveGame.participants && (
+            <div className="mt-6">
+              <h3 className="text-blue-400 font-semibold mb-4 text-lg">Live Game Participants</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {data.liveGame.participants.map((participant: Participant) => (
+                  <div 
+                    key={participant.summonerId} 
+                    className="flex items-center bg-gray-800 p-4 rounded border border-gray-700"
+                  >
+                    {/* Profile Image */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src={`https://ddragon.leagueoflegends.com/cdn/13.1.1/img/profileicon/${participant.championId}.png`}
+                        alt={participant.summonerName}
+                        className="w-16 h-16 rounded-full"
+                      />
                     </div>
-                  ))}
-                </div>
+
+                    {/* Participant Info */}
+                    <div className="ml-4 flex-1">
+                      <h4 className="text-white font-semibold">{participant.summonerName}</h4>
+                      <p className="text-gray-400 text-sm">
+                        Team: {participant.teamId === 100 ? 'Blue' : 'Red'}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        Champion ID: {participant.championId}
+                      </p>
+                      <p className="text-green-400 text-sm font-bold">
+                        {participant.kills} / {participant.deaths} / {participant.assists} (K/D/A)
+                      </p>
+                    </div>
+
+                    {/* Items */}
+                    <div className="ml-4 grid grid-cols-3 gap-1">
+                      {[participant.item0, participant.item1, participant.item2, participant.item3, participant.item4, participant.item5]
+                        .filter((item) => item)
+                        .map((item, index) => (
+                          <img
+                            key={index}
+                            src={`https://ddragon.leagueoflegends.com/cdn/13.1.1/img/item/${item}.png`}
+                            alt={`Item ${item}`}
+                            className="w-8 h-8 rounded"
+                          />
+                        ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Debug Information - remove in production */}
+          {/* Debug Info */}
           {data && (
             <div className="mt-4 p-4 bg-gray-800 rounded border border-gray-700">
               <h3 className="font-semibold mb-2 text-yellow-400">Debug Info</h3>
