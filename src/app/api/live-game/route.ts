@@ -20,27 +20,29 @@ export async function GET(request: Request) {
     const RIOT_API_KEY = process.env.RIOT_API_KEY?.trim();
 
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
-      return NextResponse.json({
-        error: 'API key not properly configured'
-      }, { status: 500 });
+      return NextResponse.json(
+        { error: 'API key not properly configured' },
+        { status: 500 }
+      );
     }
 
     // 1. Get Account Info
     console.log('Fetching account info...');
-    const accountUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${encodeURIComponent(tagLine)}`;
-    console.log('Account URL:', accountUrl);
-    
+    const accountUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
+      summonerName
+    )}/${encodeURIComponent(tagLine)}`;
+
     const accountResponse = await fetch(accountUrl, {
-      headers: { 'X-Riot-Token': RIOT_API_KEY }
+      headers: { 'X-Riot-Token': RIOT_API_KEY },
     });
 
     if (!accountResponse.ok) {
       const accountError = await accountResponse.text();
       console.error('Account fetch error:', accountError);
-      return NextResponse.json({
-        error: 'Account not found',
-        details: accountError
-      }, { status: accountResponse.status });
+      return NextResponse.json(
+        { error: 'Account not found', details: accountError },
+        { status: accountResponse.status }
+      );
     }
 
     const accountData = await accountResponse.json();
@@ -49,19 +51,18 @@ export async function GET(request: Request) {
     // 2. Get Summoner data
     console.log('Fetching summoner data...');
     const summonerUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`;
-    console.log('Summoner URL:', summonerUrl);
 
     const summonerResponse = await fetch(summonerUrl, {
-      headers: { 'X-Riot-Token': RIOT_API_KEY }
+      headers: { 'X-Riot-Token': RIOT_API_KEY },
     });
 
     if (!summonerResponse.ok) {
       const summonerError = await summonerResponse.text();
       console.error('Summoner fetch error:', summonerError);
-      return NextResponse.json({
-        error: 'Summoner not found',
-        details: summonerError
-      }, { status: summonerResponse.status });
+      return NextResponse.json(
+        { error: 'Summoner not found', details: summonerError },
+        { status: summonerResponse.status }
+      );
     }
 
     const summonerData = await summonerResponse.json();
@@ -73,7 +74,7 @@ export async function GET(request: Request) {
     console.log('Live game URL:', liveGameUrl);
 
     const liveGameResponse = await fetch(liveGameUrl, {
-      headers: { 'X-Riot-Token': RIOT_API_KEY }
+      headers: { 'X-Riot-Token': RIOT_API_KEY },
     });
 
     let liveGameData = null;
@@ -83,12 +84,15 @@ export async function GET(request: Request) {
       liveGameData = await liveGameResponse.json();
       gameMessage = 'Player is in game';
       console.log('Live game data:', liveGameData);
+    } else if (liveGameResponse.status === 404) {
+      console.log('Player not in an active game.');
     } else {
       const liveGameError = await liveGameResponse.text();
-      console.log('No active game found:', {
-        status: liveGameResponse.status,
-        error: liveGameError
-      });
+      console.error('Live game fetch error:', liveGameError);
+      return NextResponse.json(
+        { error: 'Error fetching live game data', details: liveGameError },
+        { status: liveGameResponse.status }
+      );
     }
 
     // Return complete response
@@ -96,17 +100,16 @@ export async function GET(request: Request) {
       account: accountData,
       summoner: {
         ...summonerData,
-        name: accountData.gameName
+        name: accountData.gameName,
       },
       liveGame: liveGameData,
-      message: gameMessage
+      message: gameMessage,
     };
 
     console.log('Final response:', response);
     return NextResponse.json(response);
-
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Unexpected error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
