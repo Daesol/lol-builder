@@ -45,6 +45,12 @@ const ItemRecommender = () => {
     }
   };
 
+  const getChampionImageUrl = (championId: number) =>
+    `https://ddragon.leagueoflegends.com/cdn/13.1.1/img/champion/${championId}.png`;
+
+  const getItemImageUrl = (itemId: number) =>
+    `https://ddragon.leagueoflegends.com/cdn/13.1.1/img/item/${itemId}.png`;
+
   return (
     <Card className="w-full max-w-4xl mx-auto bg-gray-900 border-gray-800">
       <CardContent className="p-6">
@@ -95,8 +101,9 @@ const ItemRecommender = () => {
               <h3 className="text-blue-400 font-semibold mb-4 text-lg">Live Game Participants</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {data.liveGame.participants.map((participant: Participant) => {
-                  // Debugging URLs and Participant Data
-                  const profileIconUrl = `https://ddragon.leagueoflegends.com/cdn/13.1.1/img/profileicon/${participant.championId}.png`;
+                  const championImageUrl = getChampionImageUrl(participant.championId);
+
+                  // Map item0 through item5 into an items array with a type guard
                   const items = [
                     participant.item0,
                     participant.item1,
@@ -104,10 +111,9 @@ const ItemRecommender = () => {
                     participant.item3,
                     participant.item4,
                     participant.item5,
-                  ].filter((item) => item);
+                  ].filter((item): item is number => item !== null);
 
-                  console.log('Participant:', participant);
-                  console.log('Profile Icon URL:', profileIconUrl);
+                  console.log(`Champion Image URL for ${participant.summonerName}:`, championImageUrl);
                   console.log('Items:', items);
 
                   return (
@@ -115,15 +121,16 @@ const ItemRecommender = () => {
                       key={participant.summonerId} 
                       className="flex items-center bg-gray-800 p-4 rounded border border-gray-700"
                     >
-                      {/* Profile Image */}
+                      {/* Champion Image */}
                       <div className="flex-shrink-0">
                         <img
-                          src={profileIconUrl}
+                          src={championImageUrl}
                           alt={participant.summonerName}
                           className="w-16 h-16 rounded-full"
-                          onError={() =>
-                            console.error('Failed to load profile icon:', profileIconUrl)
-                          }
+                          onError={(e) => {
+                            e.currentTarget.src = '/default-champion-icon.png'; // Fallback to default
+                            console.error(`Failed to load champion image: ${championImageUrl}`);
+                          }}
                         />
                       </div>
 
@@ -131,31 +138,27 @@ const ItemRecommender = () => {
                       <div className="ml-4 flex-1">
                         <h4 className="text-white font-semibold">{participant.summonerName}</h4>
                         <p className="text-gray-400 text-sm">
-                          Team: {participant.teamId === 100 ? 'Blue' : 'Red'}
-                        </p>
-                        <p className="text-gray-400 text-sm">
-                          Champion ID: {participant.championId}
-                        </p>
-                        <p className="text-green-400 text-sm font-bold">
-                          {participant.kills} / {participant.deaths} / {participant.assists} (K/D/A)
+                          K/D/A: {participant.kills} / {participant.deaths} / {participant.assists}
                         </p>
                       </div>
 
                       {/* Items */}
                       <div className="ml-4 grid grid-cols-3 gap-1">
-                        {items.map((item, index) => {
-                          const itemImageUrl = `https://ddragon.leagueoflegends.com/cdn/13.1.1/img/item/${item}.png`;
-                          console.log('Item Image URL:', itemImageUrl);
-
+                        {Array.from({ length: 6 }).map((_, idx) => {
+                          const itemId = items[idx];
+                          const itemImageUrl = itemId
+                            ? getItemImageUrl(itemId)
+                            : '/default-item-icon.png'; // Fallback for empty slots
                           return (
                             <img
-                              key={index}
+                              key={idx}
                               src={itemImageUrl}
-                              alt={`Item ${item}`}
+                              alt={itemId ? `Item ${itemId}` : 'Empty slot'}
                               className="w-8 h-8 rounded"
-                              onError={() =>
-                                console.error('Failed to load item image:', itemImageUrl)
-                              }
+                              onError={(e) => {
+                                e.currentTarget.src = '/default-item-icon.png'; // Fallback to default
+                                console.error(`Failed to load item image: ${itemImageUrl}`);
+                              }}
                             />
                           );
                         })}
