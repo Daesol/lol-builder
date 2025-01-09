@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const summonerName = searchParams.get('summoner');
+    const tagLine = searchParams.get('tagLine') || 'NA1'; // Get tagLine from query params
     const platform = (searchParams.get('region') || 'NA1').toUpperCase();
 
     if (!summonerName) {
@@ -27,56 +28,60 @@ export async function GET(request: Request) {
       }, { status: 500 });
     }
 
-    // Use regional routing for the API call
-    const url = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${platform}`;
-    
-    console.log('Making request to:', url);
-
-    const response = await fetch(url, {
-      method: 'GET',
+    // 1. First get Riot Account ID using name and tag
+    const accountUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${encodeURIComponent(tagLine)}`;
+    const accountResponse = await fetch(accountUrl, {
       headers: {
-        'X-Riot-Token': RIOT_API_KEY,
-        'Accept': 'application/json'
+        'X-Riot-Token': RIOT_API_KEY
       }
     });
 
-    const responseText = await response.text();
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch {
-      responseData = responseText;
-    }
-
-    if (!response.ok) {
+    if (!accountResponse.ok) {
       return NextResponse.json({
-        error: `API Response: ${response.status}`,
-        details: {
-          url: url,
-          status: response.status,
-          headers: Object.fromEntries(response.headers.entries()),
-          response: responseData,
-          keyInfo: {
-            hasKey: !!RIOT_API_KEY,
-            startsWithRGAPI: RIOT_API_KEY.startsWith('RGAPI-'),
-            length: RIOT_API_KEY.length
-          }
-        }
-      }, { status: response.status });
+        error: 'Account not found',
+        details: await accountResponse.json()
+      }, { status: accountResponse.status });
     }
 
-    // After getting the account info, get summoner details
-    const puuid = responseData.puuid;
-    const summonerUrl = `https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`;
-    
+    const accountData = await accountResponse.json();
+
+    // 2. Get Summoner data using PUUID
+    const summonerUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`;
     const summonerResponse = await fetch(summonerUrl, {
       headers: {
         'X-Riot-Token': RIOT_API_KEY
       }
     });
 
+    if (!summonerResponse.ok) {
+      return NextResponse.json({
+        error: 'Summoner not found',
+        details: await summonerResponse.json()
+      }, { status: summonerResponse.status });
+    }
+
     const summonerData = await summonerResponse.json();
-    return NextResponse.json(summonerData);
+
+    // 3. Try to get live game data
+    const liveGameUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerData.id}`;
+    const liveGameResponse = await fetch(liveGameUrl, {
+      headers: {
+        'X-Riot-Token': RIOT_API_KEY
+      }
+    });
+
+    // If 404, player is not in game (this is normal)
+    const liveGameData = liveGameResponse.status === 404 
+      ? null 
+      : await liveGameResponse.json();
+
+    // Return all the data
+    return NextResponse.json({
+      account: accountData,
+      summoner: summonerData,
+      liveGame: liveGameData,
+      message: liveGameData ? 'Player is in game' : 'Player is not in game'
+    });
 
   } catch (error) {
     console.error('Error:', error);
