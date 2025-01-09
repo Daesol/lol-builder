@@ -26,17 +26,21 @@ const ItemRecommender = () => {
     setError(null);
 
     try {
+      console.log('Fetching data for:', summonerName, tagLine, region);
       const response = await fetch(
         `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}`
       );
       const result = await response.json();
 
       if (!response.ok) {
+        console.error('API Error:', result);
         throw new Error(result.error || 'An error occurred');
       }
 
+      console.log('API Response:', result);
       setData(result);
     } catch (err) {
+      console.error('Fetch Error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
@@ -85,25 +89,36 @@ const ItemRecommender = () => {
             </Alert>
           )}
 
+          {data?.account && (
+            <div className="bg-gray-800 p-4 rounded border border-gray-700 mt-4">
+              <h3 className="font-semibold mb-2 text-blue-400">Account Info</h3>
+              <p className="text-gray-300">Game Name: {data.account.gameName}</p>
+              <p className="text-gray-300">Tag Line: {data.account.tagLine}</p>
+            </div>
+          )}
+
           {data?.summoner && (
-            <div className="bg-gray-800 p-4 rounded border border-gray-700">
+            <div className="bg-gray-800 p-4 rounded border border-gray-700 mt-4">
               <h3 className="font-semibold mb-2 text-blue-400">Summoner Info</h3>
-              <p className="text-gray-300">Name: {data.summoner.name}</p>
+              <p className="text-gray-300">Name: {data.summoner.name || data.account?.gameName}</p>
               <p className="text-gray-300">Level: {data.summoner.summonerLevel}</p>
+              <p className="text-gray-300">ID: {data.summoner.id}</p>
+              <p className="text-gray-300">PUUID: {data.summoner.puuid}</p>
             </div>
           )}
 
           {data?.message && (
-            <Alert>
+            <Alert className="mt-4">
               <AlertDescription>{data.message}</AlertDescription>
             </Alert>
           )}
 
           {data?.liveGame && data.liveGame.participants && data.liveGame.participants.length > 0 && (
-            <div className="bg-gray-800 p-4 rounded border border-gray-700">
+            <div className="bg-gray-800 p-4 rounded border border-gray-700 mt-4">
               <h3 className="font-semibold mb-2 text-blue-400">Live Game Info</h3>
               <p className="text-gray-300">Game Type: {data.liveGame.gameType}</p>
               <p className="text-gray-300">Game Mode: {data.liveGame.gameMode}</p>
+              <p className="text-gray-300">Game ID: {data.liveGame.gameId}</p>
               <div className="mt-4">
                 <h4 className="font-medium text-blue-400 mb-2">Players:</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -112,11 +127,23 @@ const ItemRecommender = () => {
                       key={participant.summonerId || Math.random()}
                       className="p-2 bg-gray-700 rounded border border-gray-600 text-gray-200"
                     >
-                      {participant.summonerName}
+                      <p>{participant.summonerName}</p>
+                      <p className="text-sm text-gray-400">Champion ID: {participant.championId}</p>
+                      <p className="text-sm text-gray-400">Team: {participant.teamId === 100 ? 'Blue' : 'Red'}</p>
                     </div>
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Debug Information - remove in production */}
+          {data && (
+            <div className="mt-4 p-4 bg-gray-800 rounded border border-gray-700">
+              <h3 className="font-semibold mb-2 text-yellow-400">Debug Info</h3>
+              <pre className="text-xs text-gray-400 overflow-auto">
+                {JSON.stringify(data, null, 2)}
+              </pre>
             </div>
           )}
         </div>

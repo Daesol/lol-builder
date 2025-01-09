@@ -1,10 +1,26 @@
 // src/types/game.ts
 
-export interface Participant {
+export interface Account {
+    puuid: string;
+    gameName: string;
+    tagLine: string;
+  }
+  
+  export interface Summoner {
+    id: string;
+    accountId: string;
+    puuid: string;
+    name: string;
+    profileIconId: number;
+    revisionDate: number;
+    summonerLevel: number;
+  }
+  
+  export interface Participant {
+    teamId: number;
     summonerId: string;
     summonerName: string;
     championId: number;
-    teamId: number;
     spell1Id: number;
     spell2Id: number;
   }
@@ -17,10 +33,8 @@ export interface Participant {
   }
   
   export interface GameData {
-    summoner: {
-      name: string;
-      summonerLevel: number;
-    };
+    account: Account;
+    summoner: Summoner;
     liveGame: LiveGame | null;
     message: string;
   }

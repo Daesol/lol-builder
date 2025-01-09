@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const summonerName = searchParams.get('summoner');
-    const tagLine = searchParams.get('tagLine') || 'NA1'; // Get tagLine from query params
+    const tagLine = searchParams.get('tagLine')?.toUpperCase() || 'NA1';
     const platform = (searchParams.get('region') || 'NA1').toUpperCase();
 
     if (!summonerName) {
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
       return NextResponse.json({
-        error: 'API key format invalid',
+        error: 'API key not properly configured',
         keyDetails: {
           hasKey: !!RIOT_API_KEY,
           startsWithRGAPI: RIOT_API_KEY?.startsWith('RGAPI-'),
@@ -28,8 +28,10 @@ export async function GET(request: Request) {
       }, { status: 500 });
     }
 
-    // 1. First get Riot Account ID using name and tag
+    // 1. First get Riot Account Info
+    console.log('Fetching account info for:', summonerName, tagLine);
     const accountUrl = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${encodeURIComponent(tagLine)}`;
+    
     const accountResponse = await fetch(accountUrl, {
       headers: {
         'X-Riot-Token': RIOT_API_KEY
@@ -37,6 +39,7 @@ export async function GET(request: Request) {
     });
 
     if (!accountResponse.ok) {
+      console.log('Account fetch failed:', await accountResponse.text());
       return NextResponse.json({
         error: 'Account not found',
         details: await accountResponse.json()
@@ -44,8 +47,10 @@ export async function GET(request: Request) {
     }
 
     const accountData = await accountResponse.json();
+    console.log('Account data:', accountData);
 
     // 2. Get Summoner data using PUUID
+    console.log('Fetching summoner data using PUUID:', accountData.puuid);
     const summonerUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`;
     const summonerResponse = await fetch(summonerUrl, {
       headers: {
@@ -54,6 +59,7 @@ export async function GET(request: Request) {
     });
 
     if (!summonerResponse.ok) {
+      console.log('Summoner fetch failed:', await summonerResponse.text());
       return NextResponse.json({
         error: 'Summoner not found',
         details: await summonerResponse.json()
@@ -61,8 +67,10 @@ export async function GET(request: Request) {
     }
 
     const summonerData = await summonerResponse.json();
+    console.log('Summoner data:', summonerData);
 
-    // 3. Try to get live game data
+    // 3. Check for active game
+    console.log('Checking for active game...');
     const liveGameUrl = `https://${platform.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerData.id}`;
     const liveGameResponse = await fetch(liveGameUrl, {
       headers: {
@@ -70,17 +78,26 @@ export async function GET(request: Request) {
       }
     });
 
-    // If 404, player is not in game (this is normal)
-    const liveGameData = liveGameResponse.status === 404 
-      ? null 
-      : await liveGameResponse.json();
+    let liveGameData = null;
+    let gameMessage = 'Player is not in game';
 
-    // Return all the data
+    if (liveGameResponse.ok) {
+      liveGameData = await liveGameResponse.json();
+      gameMessage = 'Player is in game';
+      console.log('Live game data:', liveGameData);
+    } else {
+      console.log('No active game found:', liveGameResponse.status);
+    }
+
+    // Return complete response
     return NextResponse.json({
       account: accountData,
-      summoner: summonerData,
+      summoner: {
+        ...summonerData,
+        name: accountData.gameName // Use the game name from account data
+      },
       liveGame: liveGameData,
-      message: liveGameData ? 'Player is in game' : 'Player is not in game'
+      message: gameMessage
     });
 
   } catch (error) {
