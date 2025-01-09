@@ -29,3 +29,4 @@ export interface Summoner {
     liveGame: LiveGame | null;
     message: string;
   }
+  
