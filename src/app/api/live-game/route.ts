@@ -22,19 +22,18 @@ export async function GET(request: Request) {
 
     console.log(`Fetching data for summoner: ${summonerName}, tag: ${tagLine}, region: ${platform}`);
 
-    // 1. Get Account Info
+    // 1. Get Account Info (this gives us PUUID)
     const accountData = await getAccountData(summonerName, tagLine);
     console.log('Account data fetched:', accountData);
 
-    // 2. Get Summoner Data
+    // 2. Get Summoner Data (for additional info)
     const summonerData = await getSummonerData(accountData.puuid, platform);
     console.log('Summoner data fetched:', summonerData);
 
-    // 3. Get Live Game Data using Summoner ID
-    const liveGameData = await getLiveGameData(summonerData.id, platform);
+    // 3. Get Live Game Data using PUUID directly
+    const liveGameData = await getLiveGameData(accountData.puuid, platform);
     console.log('Live game status:', liveGameData ? 'In game' : 'Not in game');
 
-    // Return the combined data
     return NextResponse.json({
       account: accountData,
       summoner: summonerData,
