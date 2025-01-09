@@ -1,3 +1,4 @@
+// src/components/ItemRecommender.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -5,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { GameData } from '@/types/riot';
 
 const ItemRecommender = () => {
   const [summonerName, setSummonerName] = useState('');
@@ -12,7 +14,7 @@ const ItemRecommender = () => {
   const [region, setRegion] = useState('NA1');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<GameData | null>(null);
 
   const fetchGameData = async () => {
     if (!summonerName.trim()) {

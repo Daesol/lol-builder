@@ -10,45 +10,22 @@ export interface Summoner {
     summonerLevel: number;
   }
   
-  // Define the game customization object type
-  interface GameCustomizationObject {
-    category: string;
-    content: string;
-  }
-  
   export interface LiveGameParticipant {
     teamId: number;
-    spell1Id: number;
-    spell2Id: number;
-    championId: number;
     summonerId: string;
     summonerName: string;
-    // Replace 'any[]' with proper type
-    gameCustomizationObjects: GameCustomizationObject[];
-    bot: boolean;
-    perks: {
-      perkIds: number[];
-      perkStyle: number;
-      perkSubStyle: number;
-    };
+    championId: number;
   }
   
   export interface LiveGame {
     gameId: number;
-    mapId: number;
-    gameMode: string;
     gameType: string;
-    gameQueueConfigId: number;
+    gameMode: string;
     participants: LiveGameParticipant[];
-    observers: {
-      encryptionKey: string;
-    };
-    platformId: string;
-    bannedChampions: {
-      championId: number;
-      teamId: number;
-      pickTurn: number;
-    }[];
-    gameStartTime: number;
-    gameLength: number;
+  }
+  
+  export interface GameData {
+    summoner: Summoner;
+    liveGame: LiveGame | null;
+    message: string;
   }
