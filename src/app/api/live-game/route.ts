@@ -1,11 +1,20 @@
 // src/app/api/live-game/route.ts
 import { NextResponse } from 'next/server';
 
+// Region routing map
+const REGION_ROUTES = {
+  'NA1': 'americas',
+  'EUW1': 'europe',
+  'KR': 'asia',
+  'EUN1': 'europe',
+  // Add more regions as needed
+};
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const summonerName = searchParams.get('summoner');
-    const region = searchParams.get('region')?.toLowerCase() || 'na1';
+    const region = (searchParams.get('region') || 'NA1').toUpperCase();
 
     if (!summonerName) {
       return NextResponse.json(
@@ -14,7 +23,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const RIOT_API_KEY = process.env.RIOT_API_KEY?.trim(); // Trim any whitespace
+    const RIOT_API_KEY = process.env.RIOT_API_KEY?.trim();
 
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
       return NextResponse.json({
@@ -27,9 +36,11 @@ export async function GET(request: Request) {
       }, { status: 500 });
     }
 
-    // Use exactly the same format as Postman
-    const url = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`;
+    // Use the platform routing (na1, euw1, etc.) for the API call
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`;
     
+    console.log('Making request to:', url);
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
