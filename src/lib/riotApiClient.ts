@@ -46,3 +46,32 @@ export const getMatchInfo = async (matchId: string) => {
   const url = `https://americas.api.riotgames.com/lol/match/v5/matches/${matchId}`;
   return fetchFromRiotAPI(url);
 };
+
+// src/lib/riotApiClient.ts
+
+export const getLiveGameData = async (summonerId: string, region: string) => {
+    const RIOT_API_KEY = process.env.RIOT_API_KEY;
+    if (!RIOT_API_KEY) {
+      throw new Error('Riot API key not configured');
+    }
+  
+    const response = await fetch(
+      `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`,
+      {
+        headers: {
+          'X-Riot-Token': RIOT_API_KEY
+        }
+      }
+    );
+  
+    // If 404, it means the player is not in game (this is normal)
+    if (response.status === 404) {
+      return null;
+    }
+  
+    if (!response.ok) {
+      throw new Error(`Failed to fetch live game data: ${response.status}`);
+    }
+  
+    return response.json();
+  };
