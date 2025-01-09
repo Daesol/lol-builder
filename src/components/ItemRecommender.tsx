@@ -2,11 +2,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { GameData } from '@/types/game';
+import type { ApiResponse, MatchParticipant } from '@/types/game';
 
 const ItemRecommender = () => {
   const [summonerName, setSummonerName] = useState('');
@@ -14,7 +15,7 @@ const ItemRecommender = () => {
   const [region, setRegion] = useState('NA1');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ApiResponse | null>(null);
 
   const fetchGameData = async () => {
     if (!summonerName.trim()) {
@@ -46,10 +47,7 @@ const ItemRecommender = () => {
     }
   };
 
-  const getChampionImageUrl = (championId: number) =>
-    `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${championId}.png`;
-
-  const getItemImageUrl = (itemId: number) =>
+  const getItemImageUrl = (itemId: number): string =>
     `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/${itemId}.png`;
 
   return (
@@ -101,13 +99,13 @@ const ItemRecommender = () => {
             <div className="mt-6">
               <h3 className="text-blue-400 font-semibold mb-4 text-lg">Match Participants</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {data.matchInfo.map((participant: any, index: number) => (
+                {data.matchInfo.map((participant: MatchParticipant, index: number) => (
                   <div 
                     key={index}
                     className="flex items-center bg-gray-800 p-4 rounded border border-gray-700"
                   >
                     {/* Participant Info */}
-                    <div className="ml-4 flex-1">
+                    <div className="flex-1">
                       <h4 className="text-white font-semibold">{participant.summonerName}</h4>
                       <p className="text-gray-400 text-sm">
                         K/D/A: {participant.kills} / {participant.deaths} / {participant.assists}
@@ -116,21 +114,23 @@ const ItemRecommender = () => {
 
                     {/* Items */}
                     <div className="ml-4 grid grid-cols-3 gap-1">
-                      {participant.items && participant.items.map((itemId: number, idx: number) => (
-                        itemId ? (
-                          <img
-                            key={idx}
-                            src={getItemImageUrl(itemId)}
-                            alt={`Item ${itemId}`}
-                            className="w-8 h-8 rounded"
-                            onError={(e) => {
-                              e.currentTarget.src = '/default-item-icon.png';
-                              console.error(`Failed to load item image: ${itemId}`);
-                            }}
-                          />
-                        ) : (
-                          <div key={idx} className="w-8 h-8 bg-gray-700 rounded" />
-                        )
+                      {participant.items.map((itemId, idx) => (
+                        <div key={idx} className="relative w-8 h-8">
+                          {itemId ? (
+                            <Image
+                              src={getItemImageUrl(itemId)}
+                              alt={`Item ${itemId}`}
+                              width={32}
+                              height={32}
+                              className="rounded"
+                              onError={() => {
+                                console.error(`Failed to load item image: ${itemId}`);
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gray-700 rounded" />
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
