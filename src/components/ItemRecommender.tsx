@@ -1,4 +1,3 @@
-// src/components/ItemRecommender.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -11,10 +10,12 @@ import type { ApiResponse, Participant } from '@/types/game';
 
 interface ItemSlotsProps {
   items?: number[];
-  onItemClick?: (itemId: number) => void;
 }
 
-const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [], onItemClick }) => {
+const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
+  const getItemImageUrl = (itemId: number): string =>
+    `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/${itemId}.png`;
+
   // Always show 6 slots
   const slots = Array(6).fill(null);
   
@@ -28,22 +29,21 @@ const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [], onItemClick }) => {
       {slots.map((itemId, idx) => (
         <div 
           key={idx} 
-          className={`relative w-8 h-8 rounded cursor-pointer
-            ${!itemId ? 'bg-gray-800 border border-gray-700 hover:bg-gray-700' : 'hover:opacity-80'}
-          `}
-          onClick={() => itemId && onItemClick?.(itemId)}
+          className={`relative w-8 h-8 rounded ${!itemId ? 'bg-gray-800 border border-gray-700' : ''}`}
+          title={itemId ? `Item ${itemId}` : `Empty Slot ${idx + 1}`}
         >
           {itemId ? (
-            <Image
-              src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/item/${itemId}.png`}
-              alt={`Item ${itemId}`}
-              width={32}
-              height={32}
-              className="rounded"
-              onError={() => {
-                console.error(`Failed to load item image: ${itemId}`);
-              }}
-            />
+            <div className="relative w-8 h-8">
+              <Image
+                src={getItemImageUrl(itemId)}
+                alt={`Item ${itemId}`}
+                fill
+                className="rounded object-cover"
+                onError={() => {
+                  console.error(`Failed to load item image: ${itemId}`);
+                }}
+              />
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
               {idx + 1}
@@ -62,7 +62,6 @@ const ItemRecommender = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ApiResponse | null>(null);
-  const [selectedItem, setSelectedItem] = useState<number | null>(null);
 
   const fetchGameData = async () => {
     if (!summonerName.trim()) {
@@ -74,9 +73,9 @@ const ItemRecommender = () => {
     setError(null);
 
     try {
-      console.log('Fetching data for:', summonerName, tagLine, region);
+      const timestamp = Date.now();
       const response = await fetch(
-        `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}`
+        `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}&_t=${timestamp}`
       );
       const result = await response.json();
 
@@ -95,11 +94,6 @@ const ItemRecommender = () => {
     }
   };
 
-  const handleItemClick = (itemId: number) => {
-    setSelectedItem(itemId);
-    // TODO: Show item details or build path
-  };
-
   return (
     <Card className="w-full max-w-4xl mx-auto bg-gray-900 border-gray-800">
       <CardContent className="p-6">
@@ -110,13 +104,13 @@ const ItemRecommender = () => {
               placeholder="Summoner Name"
               value={summonerName}
               onChange={(e) => setSummonerName(e.target.value)}
-              className="flex-1 bg-gray-800 border-gray-700"
+              className="flex-1 bg-gray-800 border-gray-700 text-white"
             />
             <Input
               placeholder="Tag (e.g., NA1)"
               value={tagLine}
               onChange={(e) => setTagLine(e.target.value)}
-              className="w-full sm:w-32 bg-gray-800 border-gray-700"
+              className="w-full sm:w-32 bg-gray-800 border-gray-700 text-white"
             />
             <select
               value={region}
@@ -144,10 +138,22 @@ const ItemRecommender = () => {
             </Alert>
           )}
 
+          {/* Account Info */}
+          {data?.account && (
+            <div className="bg-gray-800 p-4 rounded border border-gray-700">
+              <h3 className="font-semibold mb-2 text-blue-400">Account Info</h3>
+              <p className="text-gray-300">Game Name: {data.account.gameName}</p>
+              <p className="text-gray-300">Tag Line: {data.account.tagLine}</p>
+              {data.summoner && (
+                <p className="text-gray-300">Level: {data.summoner.summonerLevel}</p>
+              )}
+            </div>
+          )}
+
           {/* Match Data */}
           {data?.matchInfo && data.matchInfo.length > 0 && (
             <div className="mt-6">
-              <h3 className="text-blue-400 font-semibold mb-4 text-lg">Match Participants</h3>
+              <h3 className="text-blue-400 font-semibold mb-4 text-lg">Recent Match Participants</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {data.matchInfo.map((participant: Participant, index: number) => (
                   <div 
@@ -160,18 +166,10 @@ const ItemRecommender = () => {
                       <p className="text-gray-400 text-sm">
                         K/D/A: {participant.kills} / {participant.deaths} / {participant.assists}
                       </p>
-                      {participant.gold && (
-                        <p className="text-yellow-400 text-sm">
-                          Gold: {participant.gold.toLocaleString()}
-                        </p>
-                      )}
                     </div>
 
                     {/* Items */}
-                    <ItemSlots 
-                      items={participant.items} 
-                      onItemClick={handleItemClick}
-                    />
+                    <ItemSlots items={participant.items} />
                   </div>
                 ))}
               </div>
@@ -189,15 +187,6 @@ const ItemRecommender = () => {
                   <li>Situational items (Slots 5-6)</li>
                 </ol>
               </div>
-            </div>
-          )}
-
-          {/* Item Details (when an item is selected) */}
-          {selectedItem && (
-            <div className="mt-4 p-4 bg-gray-800 rounded border border-gray-700">
-              <h4 className="text-blue-400 font-semibold mb-2">Item Details</h4>
-              <p className="text-gray-300">Item ID: {selectedItem}</p>
-              {/* TODO: Add more item details */}
             </div>
           )}
 
