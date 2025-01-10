@@ -1,6 +1,6 @@
 // src/components/ItemRecommender/ParticipantCard.tsx
 import { LiveGameParticipant } from '@/types/game';
-import { ItemSlots } from './ItemSlots';
+import { ItemSlots } from '../ItemSlots';
 
 interface ParticipantCardProps {
   participant: LiveGameParticipant;

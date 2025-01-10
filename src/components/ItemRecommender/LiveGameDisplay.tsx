@@ -1,6 +1,6 @@
 // src/components/ItemRecommender/LiveGameDisplay.tsx
 import { LiveGame } from '@/types/game';
-import { ParticipantCard } from './ParticipantCard';
+import { ParticipantCard } from './LiveGame/ParticipantCard';
 
 interface LiveGameDisplayProps {
   liveGame: LiveGame;
