@@ -7,7 +7,7 @@ interface RiotAPIError {
     };
   }
   
-  const fetchFromRiotAPI = async (url: string, noCache = false) => {
+  const fetchFromRiotAPI = async (url: string) => {
     const RIOT_API_KEY = process.env.RIOT_API_KEY;
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
       throw new Error('Invalid or missing Riot API key');
@@ -68,5 +68,5 @@ interface RiotAPIError {
     const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
     console.log('Fetching live game data:', { summonerId, region, url });
     // Pass noCache=true for live game data
-    return fetchFromRiotAPI(url, true);
+    return fetchFromRiotAPI(url);
   };
