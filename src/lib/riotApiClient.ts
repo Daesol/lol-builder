@@ -65,3 +65,30 @@ const makeRiotRequest = async (url: string) => {
     
     return makeRiotRequest(url);
   };
+
+  export const getMatchIds = async (puuid: string, region: string) => {
+    // Convert platform to regional routing
+    const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
+                         region.toLowerCase().includes('euw') ? 'europe' :
+                         region.toLowerCase().includes('kr') ? 'asia' :
+                         'americas';
+                         
+    // Get only the most recent match
+    const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1`;
+    const data = await makeRiotRequest(url);
+    if (!data) throw new Error('No matches found');
+    return data;
+  };
+  
+  export const getMatchDetails = async (matchId: string, region: string) => {
+    // Convert platform to regional routing
+    const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
+                         region.toLowerCase().includes('euw') ? 'europe' :
+                         region.toLowerCase().includes('kr') ? 'asia' :
+                         'americas';
+  
+    const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
+    const data = await makeRiotRequest(url);
+    if (!data) throw new Error('Match not found');
+    return data;
+  };

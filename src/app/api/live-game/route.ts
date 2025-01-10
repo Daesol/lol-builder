@@ -4,6 +4,8 @@ import {
   getAccountData,
   getSummonerData,
   getLiveGameData,
+  getMatchIds,
+  getMatchDetails
 } from '@/lib/riotApiClient';
 
 export async function GET(request: Request) {
@@ -20,41 +22,38 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log(`Fetching data for summoner: ${summonerName}, tag: ${tagLine}, region: ${platform}`);
-
-    // 1. Get Account Info (this gives us PUUID)
+    // 1. Get Account Info
     const accountData = await getAccountData(summonerName, tagLine);
     console.log('Account data fetched:', accountData);
 
-    // 2. Get Summoner Data (for additional info)
+    // 2. Get Summoner Data
     const summonerData = await getSummonerData(accountData.puuid, platform);
     console.log('Summoner data fetched:', summonerData);
 
-    // 3. Get Live Game Data using PUUID
-    console.log('Attempting to get live game data with:', {
-      puuid: accountData.puuid,
-      platform: platform
-    });
-    
-    try {
-      const liveGameData = await getLiveGameData(accountData.puuid, platform);
-      console.log('Live game data response:', liveGameData);
+    // 3. Try to get live game data
+    const liveGameData = await getLiveGameData(accountData.puuid, platform).catch(() => null);
 
-      return NextResponse.json({
-        account: accountData,
-        summoner: summonerData,
-        liveGame: liveGameData
-      });
-    } catch (gameError) {
-      console.error('Live game fetch error:', gameError);
-      // Return null for live game if player isn't in game
-      return NextResponse.json({
-        account: accountData,
-        summoner: summonerData,
-        liveGame: null,
-        message: 'Player is not in game'
-      });
+    // 4. If not in game, get latest match
+    let lastMatch = null;
+    if (!liveGameData) {
+      try {
+        const matchIds = await getMatchIds(accountData.puuid, platform);
+        if (matchIds && matchIds.length > 0) {
+          lastMatch = await getMatchDetails(matchIds[0], platform);
+          console.log('Last match data fetched:', lastMatch);
+        }
+      } catch (matchError) {
+        console.error('Error fetching match data:', matchError);
+      }
     }
+
+    return NextResponse.json({
+      account: accountData,
+      summoner: summonerData,
+      liveGame: liveGameData,
+      lastMatch: lastMatch,
+      message: liveGameData ? 'Player is in game' : 'Showing last match data'
+    });
 
   } catch (error) {
     console.error('Error:', error);

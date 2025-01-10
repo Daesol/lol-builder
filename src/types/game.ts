@@ -83,3 +83,24 @@ export interface Account {
     into?: string[];
     from?: string[];
   }
+
+  export interface MatchParticipant {
+    puuid: string;
+    summonerName: string;
+    championId: number;
+    championName: string;
+    teamId: number;
+    kills: number;
+    deaths: number;
+    assists: number;
+    item0: number;
+    item1: number;
+    item2: number;
+    item3: number;
+    item4: number;
+    item5: number;
+    item6: number;
+    totalDamageDealtToChampions: number;
+    goldEarned: number;
+    win: boolean;
+  }
