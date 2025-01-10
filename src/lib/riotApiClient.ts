@@ -52,36 +52,38 @@ const makeRiotRequest = async (url: string) => {
     return data;
   };
   
-  export const getLiveGameData = async (puuid: string, region: string) => {
-    // Use platform routing (na1, euw1, etc.)
-    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
-    
-    console.log('Getting live game data:', {
-      puuid,
-      region,
-      platformUrl: region.toLowerCase(),
-      url
-    });
-    
+  export const getLiveGameData = async (summonerId: string, region: string) => {
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${summonerId}`;
     return makeRiotRequest(url);
   };
-
-  export const getMatchIds = async (puuid: string, region: string) => {
-    // Convert platform to regional routing
+  
+  export const getChampionMastery = async (summonerId: string, region: string, championId?: number) => {
+    const url = championId 
+      ? `https://${region.toLowerCase()}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/${summonerId}/by-champion/${championId}`
+      : `https://${region.toLowerCase()}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/${summonerId}`;
+    
+    const data = await makeRiotRequest(url);
+    if (!data) throw new Error('Champion mastery data not found');
+    return data;
+  };
+  
+  export const getMatchHistory = async (puuid: string, region: string, championId?: number, count: number = 10) => {
     const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
                          region.toLowerCase().includes('euw') ? 'europe' :
                          region.toLowerCase().includes('kr') ? 'asia' :
                          'americas';
-                         
-    // Get only the most recent match
-    const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1`;
+    
+    let url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`;
+    if (championId) {
+      url += `&champion=${championId}`;
+    }
+    
     const data = await makeRiotRequest(url);
     if (!data) throw new Error('No matches found');
     return data;
   };
   
   export const getMatchDetails = async (matchId: string, region: string) => {
-    // Convert platform to regional routing
     const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
                          region.toLowerCase().includes('euw') ? 'europe' :
                          region.toLowerCase().includes('kr') ? 'asia' :
@@ -90,5 +92,12 @@ const makeRiotRequest = async (url: string) => {
     const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
     const data = await makeRiotRequest(url);
     if (!data) throw new Error('Match not found');
+    return data;
+  };
+  
+  export const getLeagueEntries = async (summonerId: string, region: string) => {
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`;
+    const data = await makeRiotRequest(url);
+    if (!data) throw new Error('League entries not found');
     return data;
   };
