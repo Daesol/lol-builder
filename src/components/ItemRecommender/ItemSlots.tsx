@@ -2,32 +2,24 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { getItemImageUrl, getItemInfo } from '@/lib/ddragonClient';
+import type { ItemData } from '@/types/ddragon';
 
 interface ItemSlotsProps {
   items?: number[];
 }
 
-interface ItemTooltip {
-  id: number;
-  name: string;
-  description: string;
-  gold: {
-    total: number;
-  };
-}
-
 export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
-  const [tooltips, setTooltips] = useState<Record<number, ItemTooltip>>({});
+  const [tooltips, setTooltips] = useState<Record<number, ItemData>>({});
   const [itemUrls, setItemUrls] = useState<Record<number, string>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadItemData = async () => {
       try {
-        const tooltipData: Record<number, ItemTooltip> = {};
+        const tooltipData: Record<number, ItemData> = {};
         const urlData: Record<number, string> = {};
         
-        for (const itemId of items) {
+        await Promise.all(items.map(async (itemId) => {
           if (itemId) {
             const [itemInfo, imageUrl] = await Promise.all([
               getItemInfo(itemId),
@@ -39,14 +31,14 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
               urlData[itemId] = imageUrl;
             }
           }
-        }
+        }));
         
         setTooltips(tooltipData);
         setItemUrls(urlData);
       } catch (error) {
         console.error('Error loading item data:', error);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
@@ -65,7 +57,7 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
         <div
           key={idx}
           className={`relative w-8 h-8 rounded ${
-            !itemId ? 'bg-gray-800 border border-gray-700' : ''
+            !itemId || loading ? 'bg-gray-800 border border-gray-700' : ''
           }`}
           title={itemId && tooltips[itemId] ? tooltips[itemId].name : `Empty Slot ${idx + 1}`}
         >
@@ -76,7 +68,7 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
                 alt={tooltips[itemId]?.name || `Item ${itemId}`}
                 fill
                 className="rounded object-cover"
-                onError={(e) => {
+                onError={() => {
                   console.error(`Failed to load item image: ${itemId}`);
                 }}
               />
