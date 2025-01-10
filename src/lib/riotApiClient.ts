@@ -1,20 +1,6 @@
 // src/lib/riotApiClient.ts
 
-// Regional routing mapper
-const REGION_TO_REGIONAL_ROUTE: { [key: string]: string } = {
-    'NA1': 'AMERICAS',
-    'BR1': 'AMERICAS',
-    'LA1': 'AMERICAS',
-    'LA2': 'AMERICAS',
-    'EUW1': 'EUROPE',
-    'EUN1': 'EUROPE',
-    'TR1': 'EUROPE',
-    'RU': 'EUROPE',
-    'KR': 'ASIA',
-    'JP1': 'ASIA'
-  };
-  
-  const makeRiotRequest = async (url: string) => {
+const makeRiotRequest = async (url: string) => {
     const apiKey = process.env.RIOT_API_KEY;
     console.log('Making request:', {
       url,
@@ -29,6 +15,7 @@ const REGION_TO_REGIONAL_ROUTE: { [key: string]: string } = {
     });
   
     console.log('Response status:', response.status);
+    console.log('Request URL:', url);
   
     if (response.status === 404) {
       return null;
@@ -59,7 +46,6 @@ const REGION_TO_REGIONAL_ROUTE: { [key: string]: string } = {
   };
   
   export const getSummonerData = async (puuid: string, region: string) => {
-    // Platform routing for Summoner V4
     const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`;
     const data = await makeRiotRequest(url);
     if (!data) throw new Error('Summoner not found');
@@ -67,23 +53,42 @@ const REGION_TO_REGIONAL_ROUTE: { [key: string]: string } = {
   };
   
   export const getLiveGameData = async (puuid: string, region: string) => {
-    // Get regional route for Spectator V5
-    const regionalRoute = REGION_TO_REGIONAL_ROUTE[region.toUpperCase()] || 'AMERICAS';
-    const url = `https://${regionalRoute.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+    // Use platform routing (na1, euw1, etc.)
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
     
     console.log('Getting live game data:', {
       puuid,
       region,
-      regionalRoute,
+      platformUrl: region.toLowerCase(),
       url
     });
     
+    return makeRiotRequest(url);
+  };
+
+  export const getMatchIds = async (puuid: string, region: string) => {
+    // Convert platform to regional routing
+    const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
+                         region.toLowerCase().includes('euw') ? 'europe' :
+                         region.toLowerCase().includes('kr') ? 'asia' :
+                         'americas';
+                         
+    // Get only the most recent match
+    const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1`;
     const data = await makeRiotRequest(url);
+    if (!data) throw new Error('No matches found');
+    return data;
+  };
   
-    // If we get data but no items (since Spectator V5 doesn't include items)
-    if (data) {
-      console.log('Live game found, but no item data available in Spectator V5');
-    }
+  export const getMatchDetails = async (matchId: string, region: string) => {
+    // Convert platform to regional routing
+    const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
+                         region.toLowerCase().includes('euw') ? 'europe' :
+                         region.toLowerCase().includes('kr') ? 'asia' :
+                         'americas';
   
+    const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
+    const data = await makeRiotRequest(url);
+    if (!data) throw new Error('Match not found');
     return data;
   };
