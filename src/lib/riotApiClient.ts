@@ -2,7 +2,6 @@
 
 const makeRiotRequest = async (url: string) => {
     const apiKey = process.env.RIOT_API_KEY;
-  
     console.log('Making request:', {
       url,
       hasKey: !!apiKey,
@@ -16,6 +15,7 @@ const makeRiotRequest = async (url: string) => {
     });
   
     console.log('Response status:', response.status);
+    console.log('Request URL:', url);
   
     if (response.status === 404) {
       return null;
@@ -23,7 +23,15 @@ const makeRiotRequest = async (url: string) => {
   
     const text = await response.text();
     try {
-      return JSON.parse(text);
+      const data = JSON.parse(text);
+      if (!response.ok) {
+        console.error('API Error:', {
+          status: response.status,
+          data: data,
+          url: url
+        });
+      }
+      return data;
     } catch {
       console.error('Failed to parse response:', text);
       throw new Error('Invalid response format');
@@ -45,6 +53,14 @@ const makeRiotRequest = async (url: string) => {
   };
   
   export const getLiveGameData = async (summonerId: string, region: string) => {
-    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
+    // Convert region to the correct platform ID if needed
+    const platformId = region.toLowerCase();
+    const url = `https://${platformId}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
+    console.log('Getting live game data:', {
+      summonerId,
+      region,
+      platformId,
+      url
+    });
     return makeRiotRequest(url);
   };
