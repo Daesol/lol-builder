@@ -92,3 +92,13 @@ const makeRiotRequest = async (url: string) => {
     if (!data) throw new Error('Match not found');
     return data;
   };
+
+  export const getRankData = async (summonerId: string, region: string) => {
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`;
+    const data = await makeRiotRequest(url);
+    if (!data) return null;
+    
+    // Find the solo queue rank
+    const soloQueue = data.find((queue: any) => queue.queueType === 'RANKED_SOLO_5x5');
+    return soloQueue || null;
+  };
