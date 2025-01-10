@@ -11,20 +11,28 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const summonerName = searchParams.get('summoner');
     const tagLine = searchParams.get('tagLine') || 'NA1';
-    const region = (searchParams.get('region') || 'NA1').toUpperCase();
+    const platform = (searchParams.get('region') || 'NA1').toUpperCase();
 
     if (!summonerName) {
-      return NextResponse.json({ error: 'Summoner name is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Summoner name is required' },
+        { status: 400 }
+      );
     }
 
-    // Get account data first (to get PUUID)
+    console.log(`Fetching data for summoner: ${summonerName}, tag: ${tagLine}, region: ${platform}`);
+
+    // 1. Get Account Info (this gives us PUUID)
     const accountData = await getAccountData(summonerName, tagLine);
-    
-    // Get summoner data using PUUID
-    const summonerData = await getSummonerData(accountData.puuid, region);
-    
-    // Get live game data using summoner ID
-    const liveGameData = await getLiveGameData(summonerData.id, region);
+    console.log('Account data fetched:', accountData);
+
+    // 2. Get Summoner Data (for additional info)
+    const summonerData = await getSummonerData(accountData.puuid, platform);
+    console.log('Summoner data fetched:', summonerData);
+
+    // 3. Get Live Game Data using summoner ID (not PUUID)
+    const liveGameData = await getLiveGameData(summonerData.id, platform);
+    console.log('Live game status:', liveGameData ? 'In game' : 'Not in game');
 
     return NextResponse.json({
       account: accountData,
@@ -33,9 +41,10 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
+    console.error('Error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'An error occurred' },
-      { status: error instanceof Error && error.message.includes('not found') ? 404 : 500 }
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
     );
   }
 }
