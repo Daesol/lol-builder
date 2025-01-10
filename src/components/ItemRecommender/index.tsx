@@ -1,10 +1,9 @@
+// Update logic to handle lastMatch
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SearchSection } from './SearchSection';
 import { LiveGameDisplay } from './LiveGameDisplay';
-import { AccountInfo } from './AccountInfo';
-import { ApiResponse } from '@/types/game';
+import { LastMatchDisplay } from './LastMatchDisplay'; // New component for match display
+import { ApiResponse } from '@/types/types';
 
 const ItemRecommender = () => {
   const [summonerName, setSummonerName] = useState('');
@@ -27,10 +26,10 @@ const ItemRecommender = () => {
       const response = await fetch(
         `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}`
       );
-      const result = await response.json();
+      const result: ApiResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'An error occurred');
+        throw new Error(result.message);
       }
 
       setData(result);
@@ -42,40 +41,26 @@ const ItemRecommender = () => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto bg-gray-900 border-gray-800">
-      <CardContent className="p-6">
-        <SearchSection
-          summonerName={summonerName}
-          tagLine={tagLine}
-          region={region}
-          loading={loading}
-          onSummonerNameChange={setSummonerName}
-          onTagLineChange={setTagLine}
-          onRegionChange={setRegion}
-          onSearch={fetchGameData}
-        />
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {data?.account && <AccountInfo account={data.account} summoner={data.summoner} />}
-
-        {data?.liveGame ? (
-          <LiveGameDisplay liveGame={data.liveGame} />
-        ) : data?.lastMatch ? (
-          <LiveGameDisplay lastMatch={data.lastMatch} />
-        ) : (
-          data?.summoner && (
-            <div className="mt-4 bg-gray-800 p-4 rounded border border-gray-700">
-              <p className="text-gray-300">{data.summoner.name} is not currently in a game</p>
-            </div>
-          )
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <SearchSection
+        summonerName={summonerName}
+        tagLine={tagLine}
+        region={region}
+        loading={loading}
+        onSummonerNameChange={setSummonerName}
+        onTagLineChange={setTagLine}
+        onRegionChange={setRegion}
+        onSearch={fetchGameData}
+      />
+      {error && <p className="text-red-500">{error}</p>}
+      {data?.liveGame ? (
+        <LiveGameDisplay liveGame={data.liveGame} />
+      ) : data?.lastMatch ? (
+        <LastMatchDisplay lastMatch={data.lastMatch} />
+      ) : (
+        <p>No game or match data available.</p>
+      )}
+    </div>
   );
 };
 
