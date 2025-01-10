@@ -13,13 +13,7 @@ export async function GET(request: Request) {
     const tagLine = searchParams.get('tagLine') || 'NA1';
     const platform = (searchParams.get('region') || 'NA1').toUpperCase();
 
-    // Log initial request parameters
-    console.log('Received request with params:', { summonerName, tagLine, platform });
-
-    // Check if API key exists
-    const apiKey = process.env.RIOT_API_KEY;
-    console.log('API Key exists:', !!apiKey);
-    console.log('API Key starts with:', apiKey?.substring(0, 8));
+    console.log('Processing request:', { summonerName, tagLine, platform });
 
     if (!summonerName) {
       return NextResponse.json(
@@ -28,45 +22,32 @@ export async function GET(request: Request) {
       );
     }
 
-    // 1. Get Account Info
-    console.log('Fetching account info...');
-    try {
-      const accountData = await getAccountData(summonerName, tagLine);
-      console.log('Account data fetched successfully:', accountData);
+    // Step 1: Get account data
+    const accountData = await getAccountData(summonerName, tagLine);
+    console.log('Account data received:', accountData);
 
-      // 2. Get Summoner Data
-      console.log('Fetching summoner data...');
-      const summonerData = await getSummonerData(accountData.puuid, platform);
-      console.log('Summoner data fetched successfully:', summonerData);
+    // Step 2: Get summoner data
+    const summonerData = await getSummonerData(accountData.puuid, platform);
+    console.log('Summoner data received:', summonerData);
 
-      // 3. Get Live Game Data
-      console.log('Fetching live game data...');
-      const liveGameData = await getLiveGameData(summonerData.id, platform);
-      console.log('Live game data response:', !!liveGameData ? 'Found' : 'Not in game');
+    // Step 3: Get live game data
+    const liveGameData = await getLiveGameData(summonerData.id, platform);
+    console.log('Live game data:', liveGameData ? 'Found' : 'Not in game');
 
-      // Return successful response
-      return NextResponse.json({
-        account: accountData,
-        summoner: summonerData,
-        liveGame: liveGameData
-      });
+    return NextResponse.json({
+      account: accountData,
+      summoner: summonerData,
+      liveGame: liveGameData
+    });
 
-    } catch (error) {
-      console.error('Detailed error:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      
-      // Return specific error based on the stage where it failed
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'An error occurred during API calls' },
-        { status: error instanceof Error && error.message.includes('Forbidden') ? 403 : 500 }
-      );
-    }
   } catch (error) {
-    console.error('Top level error:', error);
+    console.error('Request failed:', error);
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

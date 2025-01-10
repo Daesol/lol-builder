@@ -1,76 +1,70 @@
 // src/lib/riotApiClient.ts
 
-const fetchFromRiotAPI = async (url: string) => {
+const fetchFromRiotAPI = async (url: string, endpoint: string) => {
     const RIOT_API_KEY = process.env.RIOT_API_KEY;
+    
+    console.log(`Fetching ${endpoint}:`, {
+      url,
+      hasKey: !!RIOT_API_KEY,
+      keyPrefix: RIOT_API_KEY?.substring(0, 8)
+    });
+  
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
-      console.error('API key validation failed:', { 
-        exists: !!RIOT_API_KEY,
-        prefix: RIOT_API_KEY?.substring(0, 8) 
-      });
-      throw new Error('Invalid or missing Riot API key');
+      throw new Error('Invalid API key format');
     }
   
     try {
-      console.log('Making request to:', url);
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'X-Riot-Token': RIOT_API_KEY,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        next: { 
-          revalidate: 30 
+          'Accept': 'application/json'
         }
       });
   
-      console.log('Response status:', response.status);
+      console.log(`${endpoint} response:`, {
+        status: response.status,
+        ok: response.ok
+      });
   
-      if (response.status === 403) {
-        const text = await response.text();
-        console.error('Forbidden error:', text);
-        throw new Error('API key may be invalid or expired');
-      }
-  
-      if (response.status === 404 && url.includes('/spectator/')) {
+      // Special handling for 404 in spectator endpoint
+      if (response.status === 404 && endpoint === 'Live Game') {
         console.log('Player not in game');
         return null;
       }
   
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error(`Failed to parse ${endpoint} response:`, text);
+        throw new Error(`Invalid response from ${endpoint} endpoint`);
+      }
   
       if (!response.ok) {
-        console.error('API Error response:', data);
-        throw new Error(
-          data.status?.message || `HTTP error! status: ${response.status}`
-        );
+        console.error(`${endpoint} error:`, data);
+        throw new Error(data.status?.message || `${endpoint} request failed`);
       }
   
       return data;
     } catch (error) {
-      console.error('Error in fetchFromRiotAPI:', {
-        error,
-        url,
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
+      console.error(`${endpoint} request failed:`, error);
       throw error;
     }
   };
   
   export const getAccountData = async (summonerName: string, tagLine: string) => {
-    console.log('Getting account data for:', { summonerName, tagLine });
     const url = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${encodeURIComponent(tagLine)}`;
-    return fetchFromRiotAPI(url);
+    return fetchFromRiotAPI(url, 'Account');
   };
   
   export const getSummonerData = async (puuid: string, region: string) => {
-    console.log('Getting summoner data for:', { puuid, region });
     const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`;
-    return fetchFromRiotAPI(url);
+    return fetchFromRiotAPI(url, 'Summoner');
   };
   
   export const getLiveGameData = async (summonerId: string, region: string) => {
-    console.log('Getting live game data for:', { summonerId, region });
     const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
-    return fetchFromRiotAPI(url);
+    return fetchFromRiotAPI(url, 'Live Game');
   };
