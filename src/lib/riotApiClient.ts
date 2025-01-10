@@ -1,13 +1,6 @@
 // src/lib/riotApiClient.ts
 
-interface RiotAPIError {
-    status: {
-      message: string;
-      status_code: number;
-    };
-  }
-  
-  const fetchFromRiotAPI = async (url: string) => {
+const fetchFromRiotAPI = async (url: string) => {
     const RIOT_API_KEY = process.env.RIOT_API_KEY;
     if (!RIOT_API_KEY?.startsWith('RGAPI-')) {
       console.error('API key validation failed:', { 
