@@ -24,7 +24,7 @@ const makeRiotRequest = async (url: string) => {
     const text = await response.text();
     try {
       return JSON.parse(text);
-    } catch (error) {
+    } catch {
       console.error('Failed to parse response:', text);
       throw new Error('Invalid response format');
     }
