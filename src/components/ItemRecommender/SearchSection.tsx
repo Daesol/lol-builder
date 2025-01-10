@@ -57,3 +57,4 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
     </div>
   );
 };
+
