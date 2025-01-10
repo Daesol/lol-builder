@@ -53,19 +53,13 @@ const makeRiotRequest = async (url: string) => {
   };
   
   export const getLiveGameData = async (puuid: string, region: string) => {
-    // Get the correct regional routing
-    const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
-                         region.toLowerCase().includes('euw') ? 'europe' :
-                         region.toLowerCase().includes('kr') ? 'asia' :
-                         'americas';
-  
-    // Use v5 endpoint with PUUID
-    const url = `https://${regionalRoute}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+    // Use platform routing (na1, euw1, etc.)
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
     
     console.log('Getting live game data:', {
       puuid,
       region,
-      regionalRoute,
+      platformUrl: region.toLowerCase(),
       url
     });
     
