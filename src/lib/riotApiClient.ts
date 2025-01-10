@@ -22,8 +22,8 @@ interface RiotAPIError {
           'Content-Type': 'application/json'
         },
         next: { 
-            revalidate: 30
-          }
+          revalidate: 30 
+        }
       });
   
       console.log('Request to:', url);
@@ -67,6 +67,5 @@ interface RiotAPIError {
   export const getLiveGameData = async (summonerId: string, region: string) => {
     const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
     console.log('Fetching live game data:', { summonerId, region, url });
-    // Pass noCache=true for live game data
     return fetchFromRiotAPI(url);
   };
