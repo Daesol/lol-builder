@@ -21,8 +21,9 @@ interface RiotAPIError {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        cache: noCache ? 'no-store' : 'default',
-        next: noCache ? undefined : { revalidate: 30 }
+        next: { 
+            revalidate: 30
+          }
       });
   
       console.log('Request to:', url);
