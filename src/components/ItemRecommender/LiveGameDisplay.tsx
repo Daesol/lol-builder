@@ -7,7 +7,7 @@ interface LiveGameDisplayProps {
 }
 
 export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ liveGame }) => {
-  const transformParticipant = (participant: any) => {
+  const transformParticipant = (participant: LiveGameParticipant) => {
     const items = [];
     for (let i = 0; i <= 6; i++) {
       const itemId = participant[`item${i}`];
