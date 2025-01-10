@@ -52,15 +52,22 @@ const makeRiotRequest = async (url: string) => {
     return data;
   };
   
-  export const getLiveGameData = async (summonerId: string, region: string) => {
-    // Convert region to the correct platform ID if needed
-    const platformId = region.toLowerCase();
-    const url = `https://${platformId}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
+  export const getLiveGameData = async (puuid: string, region: string) => {
+    // Get the correct regional routing
+    const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
+                         region.toLowerCase().includes('euw') ? 'europe' :
+                         region.toLowerCase().includes('kr') ? 'asia' :
+                         'americas';
+  
+    // Use v5 endpoint with PUUID
+    const url = `https://${regionalRoute}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+    
     console.log('Getting live game data:', {
-      summonerId,
+      puuid,
       region,
-      platformId,
+      regionalRoute,
       url
     });
+    
     return makeRiotRequest(url);
   };

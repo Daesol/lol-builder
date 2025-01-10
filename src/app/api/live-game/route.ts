@@ -30,14 +30,14 @@ export async function GET(request: Request) {
     const summonerData = await getSummonerData(accountData.puuid, platform);
     console.log('Summoner data fetched:', summonerData);
 
-    // 3. Get Live Game Data using summoner ID
+    // 3. Get Live Game Data using PUUID
     console.log('Attempting to get live game data with:', {
-      summonerId: summonerData.id,
+      puuid: accountData.puuid,
       platform: platform
     });
     
     try {
-      const liveGameData = await getLiveGameData(summonerData.id, platform);
+      const liveGameData = await getLiveGameData(accountData.puuid, platform);
       console.log('Live game data response:', liveGameData);
 
       return NextResponse.json({
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       });
     } catch (gameError) {
       console.error('Live game fetch error:', gameError);
-      // If there's an error with live game data, return other data anyway
+      // Return null for live game if player isn't in game
       return NextResponse.json({
         account: accountData,
         summoner: summonerData,
