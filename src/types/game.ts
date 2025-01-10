@@ -1,5 +1,3 @@
-// src/types/game.ts
-
 export interface Account {
     puuid: string;
     gameName: string;
@@ -21,14 +19,13 @@ export interface Account {
       perkStyle: number;
       perkSubStyle: number;
     };
-    // Item slots
     item0?: number;
     item1?: number;
     item2?: number;
     item3?: number;
     item4?: number;
     item5?: number;
-    item6?: number;  // Trinket slot
+    item6?: number; // Trinket slot
   }
   
   export interface LiveGame {
@@ -64,7 +61,7 @@ export interface Account {
     };
     liveGame: LiveGame | null;
   }
-
+  
   export interface ItemData {
     name: string;
     description: string;
@@ -83,7 +80,7 @@ export interface Account {
     into?: string[];
     from?: string[];
   }
-
+  
   export interface MatchParticipant {
     puuid: string;
     summonerName: string;
@@ -104,3 +101,34 @@ export interface Account {
     goldEarned: number;
     win: boolean;
   }
+  
+  export interface MatchInfo {
+    gameCreation: number; // Timestamp when the game started
+    gameDuration: number; // Duration of the game in seconds
+    gameId: number;       // Unique game ID
+    gameMode: string;     // Game mode (e.g., CLASSIC, ARAM)
+    gameType: string;     // Game type (e.g., MATCHED_GAME)
+    gameVersion: string;  // Version of the game client
+    mapId: number;        // Map ID (e.g., Summoner's Rift)
+    participants: MatchParticipant[]; // List of participants in the game
+    platformId: string;   // Platform ID (e.g., NA1, EUW1)
+    queueId: number;      // Queue type (e.g., ranked, normal)
+    teams: {
+      teamId: number;     // Team ID (100 for Blue, 200 for Red)
+      win: boolean;       // Did the team win?
+      baronKills: number;
+      dragonKills: number;
+      towerKills: number;
+    }[];                  // Summary of team stats
+  }
+  
+  export interface Summoner {
+    id: string;
+    accountId: string;
+    puuid: string;
+    name: string;
+    profileIconId: number;
+    revisionDate: number;
+    summonerLevel: number;
+  }
+  

@@ -1,42 +1,29 @@
-// src/components/ItemRecommender/ItemSlots.tsx
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { getItemImageUrl, getItemInfo } from '@/lib/ddragonClient';
-import type { ItemData } from '@/types/ddragon';
+import { getItemImageUrl } from '@/lib/ddragonClient';
 
 interface ItemSlotsProps {
   items?: number[];
 }
 
 export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
-  const [tooltips, setTooltips] = useState<Record<number, ItemData>>({});
   const [itemUrls, setItemUrls] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadItemData = async () => {
       try {
-        const tooltipData: Record<number, ItemData> = {};
         const urlData: Record<number, string> = {};
-        
-        await Promise.all(items.map(async (itemId) => {
-          if (itemId) {
-            const [itemInfo, imageUrl] = await Promise.all([
-              getItemInfo(itemId),
-              getItemImageUrl(itemId)
-            ]);
-            
-            if (itemInfo) {
-              tooltipData[itemId] = itemInfo;
-              urlData[itemId] = imageUrl;
+        await Promise.all(
+          items.map(async (itemId) => {
+            if (itemId) {
+              urlData[itemId] = await getItemImageUrl(itemId);
             }
-          }
-        }));
-        
-        setTooltips(tooltipData);
+          })
+        );
         setItemUrls(urlData);
       } catch (error) {
-        console.error('Error loading item data:', error);
+        console.error('Error loading item images:', error);
       } finally {
         setLoading(false);
       }
@@ -59,20 +46,16 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
           className={`relative w-8 h-8 rounded ${
             !itemId || loading ? 'bg-gray-800 border border-gray-700' : ''
           }`}
-          title={itemId && tooltips[itemId] ? tooltips[itemId].name : `Empty Slot ${idx + 1}`}
+          title={itemId ? `Item ${itemId}` : `Empty Slot ${idx + 1}`}
         >
           {itemId && itemUrls[itemId] ? (
-            <div className="relative w-8 h-8">
-              <Image
-                src={itemUrls[itemId]}
-                alt={tooltips[itemId]?.name || `Item ${itemId}`}
-                fill
-                className="rounded object-cover"
-                onError={() => {
-                  console.error(`Failed to load item image: ${itemId}`);
-                }}
-              />
-            </div>
+            <Image
+              src={itemUrls[itemId]}
+              alt={`Item ${itemId}`}
+              width={32}
+              height={32}
+              className="rounded object-cover"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
               {idx + 1}

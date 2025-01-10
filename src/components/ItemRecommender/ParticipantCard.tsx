@@ -1,22 +1,16 @@
-// src/components/ItemRecommender/ParticipantCard.tsx
-import { LiveGameParticipant } from '@/types/game';
+import { LiveGameParticipant, MatchParticipant } from '@/types/game';
 import { ItemSlots } from './ItemSlots';
 
+type Participant = LiveGameParticipant | MatchParticipant;
+
 interface ParticipantCardProps {
-  participant: LiveGameParticipant;
+  participant: Participant;
 }
 
 export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant }) => {
-  // Extract items from the participant's current runes and items
-  const items = [];
-  for (let i = 0; i <= 6; i++) {
-    const itemId = participant[`item${i}` as keyof LiveGameParticipant];
-    if (itemId && typeof itemId === 'number') {
-      items.push(itemId);
-    }
-  }
-
-  console.log('Participant items:', items); // Debug log
+  const items = Array.from({ length: 7 }, (_, i) =>
+    participant[`item${i}` as keyof Participant]
+  ).filter((item): item is number => typeof item === 'number' && item > 0);
 
   return (
     <div
