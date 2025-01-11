@@ -1,7 +1,6 @@
-// src/components/ItemRecommender/ParticipantCard.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LiveGameParticipant } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -17,10 +16,6 @@ interface MatchStats {
 }
 
 interface PerformanceData {
-  riotId: number;
-  riotIdGameName: string;
-  riotIdTagline: string;
-  kills: number;
   championId: number;
   matchCount: number;
   wins: number;
@@ -55,25 +50,24 @@ interface ParticipantCardProps {
   participant: LiveGameParticipant;
   region: string;
   matchStats?: MatchStats;
+  enableAnalysis?: boolean;
 }
 
-export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, region, matchStats }) => {
+export const ParticipantCard: React.FC<ParticipantCardProps> = ({ 
+  participant, 
+  region, 
+  matchStats,
+  enableAnalysis = false
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const displayName = participant.riotId || participant.summonerName || `Champion ${participant.championId}`;
-
-  console.log('Rendering ParticipantCard:', {
-    riotId: participant.riotId,
-    championId: participant.championId,
-    teamId: participant.teamId,
-    allFields: Object.keys(participant)
-  });
+  const displayName = participant.riotIdGameName || participant.summonerName || `Champion ${participant.championId}`;
 
   const fetchPerformanceData = async () => {
-    if (!isExpanded || performanceData) return;
+    if (!isExpanded || performanceData || !enableAnalysis) return;
     
     setIsLoading(true);
     setError(null);
@@ -109,13 +103,11 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
     }
   };
 
-  const handleExpand = () => {
-    const newExpandedState = !isExpanded;
-    setIsExpanded(newExpandedState);
-    if (newExpandedState && !performanceData && !isLoading) {
+  useEffect(() => {
+    if (isExpanded && enableAnalysis) {
       fetchPerformanceData();
     }
-  };
+  }, [isExpanded, enableAnalysis, participant.summonerId, region, participant.championId]);
 
   return (
     <div className="space-y-2">
@@ -133,31 +125,33 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
             </div>
             <div>
               <h4 className="text-white font-semibold">{displayName}</h4>
-              <p className="text-sm text-gray-300">
-                {participant.teamPosition || 'Unknown Position'}
-              </p>
+              {participant.championName && (
+                <p className="text-sm text-gray-300">{participant.championName}</p>
+              )}
             </div>
           </div>
-          <div className="text-sm">
+          <div className="text-sm flex justify-between items-center">
             <p className={participant.teamId === 100 ? 'text-blue-400' : 'text-red-400'}>
               {participant.teamId === 100 ? 'Blue Team' : 'Red Team'}
             </p>
             {matchStats && (
-              <p className="text-sm text-gray-300">
+              <p className="text-gray-300">
                 {matchStats.kills}/{matchStats.deaths}/{matchStats.assists}
               </p>
             )}
           </div>
         </div>
         
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleExpand}
-          className="ml-2"
-        >
-          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
+        {(enableAnalysis || matchStats) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="ml-2"
+          >
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        )}
       </div>
 
       {isExpanded && (
@@ -194,69 +188,75 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
               </div>
             </div>
           )}
-          {isLoading && (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-gray-400 mt-2 text-sm">Loading performance data...</p>
-            </div>
-          )}
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {performanceData && (
-            <div className="bg-gray-800 rounded p-4">
-              <h5 className="text-white text-sm mb-3">Recent Performance</h5>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-gray-700 p-2 rounded">
-                  <div className="text-gray-400 text-xs">Games</div>
-                  <div className="text-white">{performanceData.matchCount}</div>
-                </div>
-                <div className="bg-gray-700 p-2 rounded">
-                  <div className="text-gray-400 text-xs">Win Rate</div>
-                  <div className="text-white">
-                    {((performanceData.wins / performanceData.matchCount) * 100).toFixed(1)}%
-                  </div>
-                </div>
-                <div className="bg-gray-700 p-2 rounded">
-                  <div className="text-gray-400 text-xs">KDA</div>
-                  <div className="text-white">
-                    {(performanceData.totalKills / Math.max(performanceData.matchCount, 1)).toFixed(1)}/
-                    {(performanceData.totalDeaths / Math.max(performanceData.matchCount, 1)).toFixed(1)}/
-                    {(performanceData.totalAssists / Math.max(performanceData.matchCount, 1)).toFixed(1)}
-                  </div>
-                </div>
-                <div className="bg-gray-700 p-2 rounded">
-                  <div className="text-gray-400 text-xs">Avg Damage</div>
-                  <div className="text-white">
-                    {Math.round(performanceData.totalDamageDealt / performanceData.matchCount).toLocaleString()}
-                  </div>
-                </div>
-              </div>
-
-              {performanceData.matchCount > 0 && (
-                <div className="mt-4">
-                  <div className="text-gray-400 text-xs mb-2">Most Common Items</div>
-                  <div className="grid grid-cols-6 gap-1">
-                    {Object.entries(performanceData.commonItems)
-                      .sort(([, a], [, b]) => b.count - a.count)
-                      .slice(0, 6)
-                      .map(([itemId, data]) => (
-                        <div 
-                          key={itemId}
-                          className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-300"
-                          title={`Used in ${data.count} games (${((data.winCount / data.count) * 100).toFixed(1)}% win rate)`}
-                        >
-                          {itemId}
-                        </div>
-                      ))}
-                  </div>
+          {/* Champion Performance Analysis */}
+          {enableAnalysis && (
+            <>
+              {isLoading && (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="text-gray-400 mt-2 text-sm">Analyzing past matches...</p>
                 </div>
               )}
-            </div>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {performanceData && (
+                <div className="bg-gray-800 rounded p-4">
+                  <h5 className="text-white text-sm mb-3">Champion History Analysis</h5>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-gray-700 p-2 rounded">
+                      <div className="text-gray-400 text-xs">Games Analyzed</div>
+                      <div className="text-white">{performanceData.matchCount}</div>
+                    </div>
+                    <div className="bg-gray-700 p-2 rounded">
+                      <div className="text-gray-400 text-xs">Win Rate</div>
+                      <div className="text-white">
+                        {((performanceData.wins / performanceData.matchCount) * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="bg-gray-700 p-2 rounded">
+                      <div className="text-gray-400 text-xs">Avg. KDA</div>
+                      <div className="text-white">
+                        {(performanceData.totalKills / Math.max(performanceData.matchCount, 1)).toFixed(1)}/
+                        {(performanceData.totalDeaths / Math.max(performanceData.matchCount, 1)).toFixed(1)}/
+                        {(performanceData.totalAssists / Math.max(performanceData.matchCount, 1)).toFixed(1)}
+                      </div>
+                    </div>
+                    <div className="bg-gray-700 p-2 rounded">
+                      <div className="text-gray-400 text-xs">Avg. Damage</div>
+                      <div className="text-white">
+                        {Math.round(performanceData.totalDamageDealt / performanceData.matchCount).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {performanceData.matchCount > 0 && (
+                    <div className="mt-4">
+                      <div className="text-gray-400 text-xs mb-2">Most Common Items</div>
+                      <div className="grid grid-cols-6 gap-1">
+                        {Object.entries(performanceData.commonItems)
+                          .sort(([, a], [, b]) => b.count - a.count)
+                          .slice(0, 6)
+                          .map(([itemId, data]) => (
+                            <div 
+                              key={itemId}
+                              className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-300"
+                              title={`Used in ${data.count} games (${((data.winCount / data.count) * 100).toFixed(1)}% win rate)`}
+                            >
+                              {itemId}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
