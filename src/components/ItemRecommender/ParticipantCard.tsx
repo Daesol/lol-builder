@@ -1,7 +1,11 @@
 // src/components/ItemRecommender/ParticipantCard.tsx
+'use client';
+
 import { useState } from 'react';
 import { LiveGameParticipant } from '@/types/game';
 import { ChampionAnalysis } from './ChampionAnalysis';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ParticipantCardProps {
   participant: LiveGameParticipant;
@@ -11,22 +15,25 @@ interface ParticipantCardProps {
 export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, region }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  console.log('Participant Data:', participant); // Debug log
+
   return (
     <div className="space-y-2">
       <div
-        className={`flex items-center p-4 rounded-lg border cursor-pointer transition-colors
+        className={`flex items-center p-4 rounded-lg border
           ${participant.teamId === 100
-            ? 'bg-blue-900/30 border-blue-700 hover:bg-blue-900/40'
-            : 'bg-red-900/30 border-red-700 hover:bg-red-900/40'
+            ? 'bg-blue-900/30 border-blue-700'
+            : 'bg-red-900/30 border-red-700'
           }`}
-        onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
             <div>
               <h4 className="text-white font-semibold">{participant.summonerName}</h4>
-              <p className="text-sm text-gray-300">{participant.teamPosition}</p>
+              <p className="text-sm text-gray-300">
+                {participant.teamPosition || 'Unknown Position'}
+              </p>
             </div>
           </div>
           <div className="text-sm">
@@ -35,14 +42,22 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
             </p>
           </div>
         </div>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="ml-2"
+        >
+          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
       </div>
 
-      {/* Champion Analysis Section */}
       {isExpanded && (
         <div className="pl-4">
           <ChampionAnalysis
             participant={{
-              puuid: participant.summonerId, // Note: You might need to adjust this based on your actual data structure
+              puuid: participant.puuid,
               summonerId: participant.summonerId,
               summonerName: participant.summonerName,
               championId: participant.championId,
