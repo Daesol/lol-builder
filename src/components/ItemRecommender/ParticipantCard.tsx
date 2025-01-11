@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ChampionPerformance, LiveGameParticipant } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -54,6 +54,7 @@ interface ParticipantCardProps {
   initialAnalysis?: ChampionPerformance;
 }
 
+
 export const ParticipantCard: React.FC<ParticipantCardProps> = ({ 
   participant, 
   region, 
@@ -68,7 +69,7 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
 
   const displayName = participant.riotIdGameName || participant.summonerName || `Champion ${participant.championId}`;
 
-  const fetchPerformanceData = async () => {
+  const fetchPerformanceData = useCallback(async () => {
     if (!isExpanded || performanceData || !enableAnalysis) return;
     
     setIsLoading(true);
@@ -103,13 +104,11 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isExpanded, performanceData, enableAnalysis, participant.summonerId, participant.championId, region]);
 
   useEffect(() => {
-    if (isExpanded && enableAnalysis) {
-      fetchPerformanceData();
-    }
-  }, [isExpanded, enableAnalysis, participant.summonerId, region, participant.championId]);
+    fetchPerformanceData();
+  }, [fetchPerformanceData]);
 
   return (
     <div className="space-y-2">
