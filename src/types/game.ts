@@ -155,6 +155,7 @@ export interface Account {
       summonerLevel: number;
     };
     liveGame: LiveGame | null;
+    lastMatch: Match | null;
     message?: string;
     error?: string; // Added lastMatch to ApiResponse
   }
