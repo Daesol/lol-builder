@@ -49,10 +49,13 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  console.log('Rendering ParticipantCard for:', participant.summonerName, {
+  const displayName = participant.riotId || participant.summonerName || `Champion ${participant.championId}`;
+
+  console.log('Rendering ParticipantCard:', {
+    riotId: participant.riotId,
     championId: participant.championId,
     teamId: participant.teamId,
-    position: participant.teamPosition
+    allFields: Object.keys(participant)
   });
 
   const fetchPerformanceData = async () => {
