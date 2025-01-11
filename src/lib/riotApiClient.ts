@@ -102,31 +102,6 @@ const makeRiotRequest = async (url: string) => {
     if (!data) throw new Error('Champion mastery data not found');
     return data;
   };
-  
-  interface ChampionMatchData {
-    matchId: string;
-    gameCreation: number;
-    gameDuration: number;
-    win: boolean;
-    kills: number;
-    deaths: number;
-    assists: number;
-    totalDamageDealt: number;
-    goldEarned: number;
-    itemBuild: number[];
-  }
-  
-  interface ChampionAnalysis {
-    championId: number;
-    championName: string;
-    games: number;
-    wins: number;
-    winRate: string;
-    avgKDA: string;
-    avgDamage: number;
-    avgGold: number;
-    matches: ChampionMatchData[];
-  }
 
   interface ChampionPerformance {
     championId: number;
