@@ -140,12 +140,23 @@ export interface Account {
   }
   
   export interface ApiResponse {
-    error?: string;
-    message?: string;
-    account: Account;
-    summoner: Summoner;
+    account: {
+      puuid: string;
+      gameName: string;
+      tagLine: string;
+    };
+    summoner: {
+      id: string;
+      accountId: string;
+      puuid: string;
+      name: string;
+      profileIconId: number;
+      revisionDate: number;
+      summonerLevel: number;
+    };
     liveGame: LiveGame | null;
-    lastMatch: Match | null;  // Added lastMatch to ApiResponse
+    message?: string;
+    error?: string; // Added lastMatch to ApiResponse
   }
 
   export interface ChampionAnalysisParticipant {
