@@ -1,26 +1,30 @@
-// app/api/participant-analysis/route.ts
+// app/api/champion-performance/route.ts
 import { NextResponse } from 'next/server';
-import { analyzeParticipantChampions } from '@/lib/riotApiClient';
+import { analyzeChampionPerformance } from '@/lib/riotApiClient';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const puuid = searchParams.get('puuid');
-    const summonerId = searchParams.get('summonerId');
+    const championId = searchParams.get('championId');
     const region = searchParams.get('region') || 'NA1';
 
-    if (!puuid || !summonerId) {
+    if (!puuid || !championId) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
 
-    const analysis = await analyzeParticipantChampions(puuid, summonerId, region);
-    return NextResponse.json(analysis);
+    const analysis = await analyzeChampionPerformance(
+      puuid,
+      region,
+      parseInt(championId, 10)
+    );
 
+    return NextResponse.json(analysis);
   } catch (error) {
-    console.error('Error in participant analysis:', error);
+    console.error('Error in champion performance analysis:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Analysis failed' },
       { status: 500 }
