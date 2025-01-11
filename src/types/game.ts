@@ -7,6 +7,9 @@ export interface Account {
   }
   
   export interface LiveGameParticipant {
+    riotIdGameName: string;  // Add this
+    riotIdTagline: string; 
+    puuid: string;
     kills: number;
     deaths: number;
     assists: number;
@@ -32,6 +35,7 @@ export interface Account {
     item5?: number;
     item6?: number; // Trinket slot
     teamPosition: string;
+    championName?: string;
   }
   
   export interface LiveGame {
@@ -142,4 +146,17 @@ export interface Account {
     summoner: Summoner;
     liveGame: LiveGame | null;
     lastMatch: Match | null;  // Added lastMatch to ApiResponse
+  }
+
+  export interface ChampionAnalysisParticipant {
+    puuid: string;        // This will be the summonerId in our case
+    summonerId: string;
+    summonerName: string;
+    championId: number;
+    teamId: number;
+  }
+  
+  export interface ChampionAnalysisProps {
+    participant: ChampionAnalysisParticipant;
+    region: string;
   }

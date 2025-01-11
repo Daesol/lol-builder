@@ -1,4 +1,3 @@
-// src/components/ItemRecommender/ParticipantCard.tsx
 'use client';
 
 import { useState } from 'react';
@@ -30,7 +29,12 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
             <div>
-              <h4 className="text-white font-semibold">{participant.summonerName}</h4>
+              <h4 className="text-white font-semibold">
+                {participant.riotIdGameName || participant.summonerName}
+                {participant.riotIdTagline && 
+                  <span className="text-gray-400 text-sm ml-1">#{participant.riotIdTagline}</span>
+                }
+              </h4>
               <p className="text-sm text-gray-300">
                 {participant.teamPosition || 'Unknown Position'}
               </p>
@@ -57,9 +61,9 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
         <div className="pl-4">
           <ChampionAnalysis
             participant={{
-              puuid: participant.puuid,
+              puuid: participant.summonerId, // Using summonerId as a unique identifier
               summonerId: participant.summonerId,
-              summonerName: participant.summonerName,
+              summonerName: participant.riotIdGameName || participant.summonerName,
               championId: participant.championId,
               teamId: participant.teamId
             }}
