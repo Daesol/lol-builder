@@ -1,11 +1,37 @@
 // src/lib/riotApiClient.ts
 
+
 import { LiveGame } from "@/types/game";
 import { RateLimit } from './rateLimit';
+
+interface ApiError {
+  status: number;
+  message: string;
+  details?: unknown;
+}
+
+type ApiResponse<T> = T | ApiError;
 
 // Define response types
 interface RiotApiResponse {
   [key: string]: any;
+}
+
+// We use specific types when we know the shape
+interface AccountResponse {
+  puuid: string;
+  gameName: string;
+  tagLine: string;
+}
+
+interface SummonerResponse {
+  id: string;
+  accountId: string;
+  puuid: string;
+  name: string;
+  profileIconId: number;
+  revisionDate: number;
+  summonerLevel: number;
 }
 
 // Create rate limiter instance
@@ -105,6 +131,24 @@ export const getMatchDetails = async (matchId: string, region: string) => {
   const data = await makeRiotRequest(url);
   if (!data) throw new Error('Match not found');
   return data;
+};
+
+export const getMatchIds = async (puuid: string, region: string): Promise<string[]> => {
+  const regionalRoute = region.toLowerCase().includes('na') ? 'americas' :
+                       region.toLowerCase().includes('euw') ? 'europe' :
+                       region.toLowerCase().includes('kr') ? 'asia' :
+                       'americas';
+                           
+  const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=1`;
+  console.log('Fetching match IDs:', { puuid, region });
+  
+  const data = await makeRiotRequest(url);
+  if (!data) {
+    console.log('No matches found for:', puuid);
+    return [];
+  }
+
+  return data as string[];
 };
 
 // Types for performance analysis

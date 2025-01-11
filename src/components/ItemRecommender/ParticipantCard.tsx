@@ -15,36 +15,36 @@ interface MatchStats {
   win: boolean;
 }
 
-interface PerformanceData {
-  championId: number;
-  matchCount: number;
-  wins: number;
-  totalKills: number;
-  totalDeaths: number;
-  totalAssists: number;
-  totalDamageDealt: number;
-  totalGoldEarned: number;
-  matches: Array<{
-    matchId: string;
-    gameCreation: number;
-    gameDuration: number;
-    win: boolean;
-    kills: number;
-    deaths: number;
-    assists: number;
-    itemBuild: number[];
-    damageDealt: number;
-    goldEarned: number;
-    role: string;
-    lane: string;
-  }>;
-  commonItems: {
-    [key: string]: {
-      count: number;
-      winCount: number;
-    };
-  };
-}
+// interface PerformanceData {
+//   championId: number;
+//   matchCount: number;
+//   wins: number;
+//   totalKills: number;
+//   totalDeaths: number;
+//   totalAssists: number;
+//   totalDamageDealt: number;
+//   totalGoldEarned: number;
+//   matches: Array<{
+//     matchId: string;
+//     gameCreation: number;
+//     gameDuration: number;
+//     win: boolean;
+//     kills: number;
+//     deaths: number;
+//     assists: number;
+//     itemBuild: number[];
+//     damageDealt: number;
+//     goldEarned: number;
+//     role: string;
+//     lane: string;
+//   }>;
+//   commonItems: {
+//     [key: string]: {
+//       count: number;
+//       winCount: number;
+//     };
+//   };
+// }
 
 interface ParticipantCardProps {
   participant: LiveGameParticipant;
