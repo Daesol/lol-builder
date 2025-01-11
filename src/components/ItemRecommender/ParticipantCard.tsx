@@ -3,9 +3,39 @@
 
 import { useState, useEffect } from 'react';
 import { LiveGameParticipant } from '@/types/game';
-import { ChampionPerformance } from './ChampionPerformance';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+
+interface PerformanceData {
+  championId: number;
+  matchCount: number;
+  wins: number;
+  totalKills: number;
+  totalDeaths: number;
+  totalAssists: number;
+  totalDamageDealt: number;
+  totalGoldEarned: number;
+  matches: Array<{
+    matchId: string;
+    gameCreation: number;
+    gameDuration: number;
+    win: boolean;
+    kills: number;
+    deaths: number;
+    assists: number;
+    itemBuild: number[];
+    damageDealt: number;
+    goldEarned: number;
+    role: string;
+    lane: string;
+  }>;
+  commonItems: {
+    [key: string]: {
+      count: number;
+      winCount: number;
+    };
+  };
+}
 
 interface ParticipantCardProps {
   participant: LiveGameParticipant;
@@ -14,7 +44,7 @@ interface ParticipantCardProps {
 
 export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, region }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [performanceData, setPerformanceData] = useState<any>(null);
+  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   console.log('Rendering ParticipantCard for:', participant.summonerName, {
@@ -43,8 +73,10 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
   };
 
   useEffect(() => {
-    fetchPerformanceData();
-  }, [isExpanded]);
+    if (isExpanded) {
+      fetchPerformanceData();
+    }
+  }, [isExpanded, participant.summonerId, region, participant.championId]);
 
   return (
     <div className="space-y-2">
@@ -94,9 +126,38 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
           ) : performanceData ? (
             <div className="bg-gray-800 rounded p-4">
               <h5 className="text-white text-sm mb-2">Recent Performance</h5>
-              <pre className="text-xs text-gray-300 overflow-auto">
-                {JSON.stringify(performanceData, null, 2)}
-              </pre>
+              <div className="text-sm text-gray-300 space-y-2">
+                <div>
+                  <span className="text-gray-400">Games Played:</span> {performanceData.matchCount}
+                </div>
+                <div>
+                  <span className="text-gray-400">Win Rate:</span>{' '}
+                  {((performanceData.wins / performanceData.matchCount) * 100).toFixed(1)}%
+                </div>
+                <div>
+                  <span className="text-gray-400">KDA:</span>{' '}
+                  {performanceData.totalKills}/{performanceData.totalDeaths}/{performanceData.totalAssists}
+                </div>
+                {performanceData.matches.length > 0 && (
+                  <div>
+                    <span className="text-gray-400">Common Items:</span>
+                    <div className="grid grid-cols-6 gap-1 mt-1">
+                      {Object.entries(performanceData.commonItems)
+                        .sort(([, a], [, b]) => b.count - a.count)
+                        .slice(0, 6)
+                        .map(([itemId, data]) => (
+                          <div 
+                            key={itemId}
+                            className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-xs"
+                            title={`Used in ${data.count} games`}
+                          >
+                            {itemId}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="text-gray-400 text-sm">No performance data available</div>
