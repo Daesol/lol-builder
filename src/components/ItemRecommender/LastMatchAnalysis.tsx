@@ -1,7 +1,6 @@
 // src/components/ItemRecommender/LastMatchAnalysis.tsx
 'use client';
 
-import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Match, MatchParticipant, LiveGameParticipant } from '@/types/game';
 import { ParticipantCard } from './ParticipantCard';
