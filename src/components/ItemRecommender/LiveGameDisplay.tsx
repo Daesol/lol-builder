@@ -10,13 +10,24 @@ interface LiveGameDisplayProps {
 }
 
 export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ liveGame, region }) => {
-  // Log the live game data for debugging
-  console.log('Live Game Data:', liveGame);
-  console.log('Number of participants:', liveGame.participants.length);
+  // Debug logs
+  console.log('==== Live Game Data ====');
+  console.log('Game Mode:', liveGame.gameMode);
+  console.log('Game Type:', liveGame.gameType);
+  console.log('Total Participants:', liveGame.participants.length);
+  console.log('All Participants:', liveGame.participants.map(p => ({
+    name: p.summonerName,
+    champion: p.championId,
+    team: p.teamId,
+    position: p.teamPosition
+  })));
 
   // Separate teams
   const blueTeam = liveGame.participants.filter(p => p.teamId === 100);
   const redTeam = liveGame.participants.filter(p => p.teamId === 200);
+
+  console.log('Blue Team Size:', blueTeam.length);
+  console.log('Red Team Size:', redTeam.length);
 
   return (
     <div className="mt-6">
