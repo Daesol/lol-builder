@@ -1,3 +1,5 @@
+// src/types/game.ts
+
 export interface Account {
     puuid: string;
     gameName: string;
@@ -52,20 +54,66 @@ export interface Account {
     gameLength: number;
   }
   
-  export interface ApiResponse {
-    error: string;
-    message: string;
-    account: Account;
-    summoner: {
-      id: string;
-      accountId: string;
-      puuid: string;
-      name: string;
-      profileIconId: number;
-      revisionDate: number;
-      summonerLevel: number;
+  export interface Summoner {
+    id: string;
+    accountId: string;
+    puuid: string;
+    name: string;
+    profileIconId: number;
+    revisionDate: number;
+    summonerLevel: number;
+  }
+  
+  export interface MatchParticipant {
+    puuid: string;
+    summonerName: string;
+    championId: number;
+    championName: string;
+    teamId: number;
+    kills: number;
+    deaths: number;
+    assists: number;
+    item0: number;
+    item1: number;
+    item2: number;
+    item3: number;
+    item4: number;
+    item5: number;
+    item6: number;
+    totalDamageDealtToChampions: number;
+    goldEarned: number;
+    visionScore: number;
+    win: boolean;
+  }
+  
+  export interface TeamInfo {
+    teamId: number;
+    win: boolean;
+    baronKills: number;
+    dragonKills: number;
+    towerKills: number;
+  }
+  
+  export interface MatchInfo {
+    gameCreation: number;
+    gameDuration: number;
+    gameId: number;
+    gameMode: string;
+    gameType: string;
+    gameVersion: string;
+    mapId: number;
+    participants: MatchParticipant[];
+    platformId: string;
+    queueId: number;
+    teams: TeamInfo[];
+  }
+  
+  export interface Match {
+    metadata: {
+      matchId: string;
+      participants: string[];
     };
-    liveGame: LiveGame | null;
+    info: MatchInfo;
   }
   
   export interface ItemData {
@@ -87,54 +135,11 @@ export interface Account {
     from?: string[];
   }
   
-  export interface MatchParticipant {
-    puuid: string;
-    summonerName: string;
-    championId: number;
-    championName: string;
-    teamId: number;
-    kills: number;
-    deaths: number;
-    assists: number;
-    item0: number;
-    item1: number;
-    item2: number;
-    item3: number;
-    item4: number;
-    item5: number;
-    item6: number;
-    totalDamageDealtToChampions: number;
-    goldEarned: number;
-    win: boolean;
+  export interface ApiResponse {
+    error?: string;
+    message?: string;
+    account: Account;
+    summoner: Summoner;
+    liveGame: LiveGame | null;
+    lastMatch: Match | null;  // Added lastMatch to ApiResponse
   }
-  
-  export interface MatchInfo {
-    gameCreation: number; // Timestamp when the game started
-    gameDuration: number; // Duration of the game in seconds
-    gameId: number;       // Unique game ID
-    gameMode: string;     // Game mode (e.g., CLASSIC, ARAM)
-    gameType: string;     // Game type (e.g., MATCHED_GAME)
-    gameVersion: string;  // Version of the game client
-    mapId: number;        // Map ID (e.g., Summoner's Rift)
-    participants: MatchParticipant[]; // List of participants in the game
-    platformId: string;   // Platform ID (e.g., NA1, EUW1)
-    queueId: number;      // Queue type (e.g., ranked, normal)
-    teams: {
-      teamId: number;     // Team ID (100 for Blue, 200 for Red)
-      win: boolean;       // Did the team win?
-      baronKills: number;
-      dragonKills: number;
-      towerKills: number;
-    }[];                  // Summary of team stats
-  }
-  
-  export interface Summoner {
-    id: string;
-    accountId: string;
-    puuid: string;
-    name: string;
-    profileIconId: number;
-    revisionDate: number;
-    summonerLevel: number;
-  }
-  
