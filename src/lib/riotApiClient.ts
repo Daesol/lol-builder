@@ -10,28 +10,10 @@ interface ApiError {
   details?: unknown;
 }
 
-type ApiResponse<T> = T | ApiError;
 
 // Define response types
 interface RiotApiResponse {
   [key: string]: any;
-}
-
-// We use specific types when we know the shape
-interface AccountResponse {
-  puuid: string;
-  gameName: string;
-  tagLine: string;
-}
-
-interface SummonerResponse {
-  id: string;
-  accountId: string;
-  puuid: string;
-  name: string;
-  profileIconId: number;
-  revisionDate: number;
-  summonerLevel: number;
 }
 
 // Create rate limiter instance
