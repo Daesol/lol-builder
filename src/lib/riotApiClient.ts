@@ -141,26 +141,78 @@ const makeRiotRequest = async (url: string) => {
   ): Promise<ChampionPerformance> => {
     try {
       // Get last 20 matches
+      console.log('Fetching match history:', { puuid, region, currentChampionId });
       const matchIds = await getParticipantMatchHistory(puuid, region, 20);
-      
-      // Get details for all matches
-      const matchDetails = await Promise.all(
-        matchIds.map((matchId: string) => getMatchDetails(matchId, region))
+      console.log('Found match IDs:', matchIds?.length || 0);
+  
+      if (!matchIds || matchIds.length === 0) {
+        console.log('No matches found');
+        return {
+          championId: currentChampionId,
+          matchCount: 0,
+          wins: 0,
+          totalKills: 0,
+          totalDeaths: 0,
+          totalAssists: 0,
+          totalDamageDealt: 0,
+          totalGoldEarned: 0,
+          matches: [],
+          commonItems: {}
+        };
+      }
+  
+      // Get details for all matches with error handling
+      const matchDetailsPromises = matchIds.map((matchId: string) => 
+        getMatchDetails(matchId, region)
+          .catch(error => {
+            console.error(`Error fetching match ${matchId}:`, error);
+            return null;
+          })
       );
+  
+      const matchDetails = (await Promise.all(matchDetailsPromises)).filter(match => match !== null);
+      console.log('Successfully fetched match details:', matchDetails.length);
   
       // Filter and analyze matches only for the current champion
       const championMatches = matchDetails
         .map(match => {
-          const participant = match.info.participants.find((p: { puuid: string; }) => p.puuid === puuid);
-          if (!participant || participant.championId !== currentChampionId) return null;
+          if (!match?.info?.participants) {
+            console.log('Invalid match data structure:', match);
+            return null;
+          }
+  
+          const participant = match.info.participants.find((p: { puuid: string; }) => {
+            if (!p || !p.puuid) {
+              console.log('Invalid participant data:', p);
+              return false;
+            }
+            return p.puuid === puuid;
+          });
+  
+          if (!participant) {
+            console.log(`Player ${puuid} not found in match participants`);
+            return null;
+          }
+  
+          if (participant.championId !== currentChampionId) {
+            console.log(`Different champion played: ${participant.championId} vs ${currentChampionId}`);
+            return null;
+          }
+  
+          console.log('Processing match:', {
+            matchId: match.metadata.matchId,
+            champion: participant.championId,
+            result: participant.win ? 'Win' : 'Loss'
+          });
+  
           return {
             matchId: match.metadata.matchId,
             gameCreation: match.info.gameCreation,
             gameDuration: match.info.gameDuration,
             win: participant.win,
-            kills: participant.kills,
-            deaths: participant.deaths,
-            assists: participant.assists,
+            kills: participant.kills || 0,
+            deaths: participant.deaths || 0,
+            assists: participant.assists || 0,
             itemBuild: [
               participant.item0,
               participant.item1,
@@ -169,14 +221,19 @@ const makeRiotRequest = async (url: string) => {
               participant.item4,
               participant.item5,
               participant.item6
-            ].filter(item => item !== 0), // Remove empty item slots
-            damageDealt: participant.totalDamageDealtToChampions,
-            goldEarned: participant.goldEarned,
-            role: participant.role,
-            lane: participant.lane
+            ].filter(item => item && item !== 0), // Remove empty item slots
+            damageDealt: participant.totalDamageDealtToChampions || 0,
+            goldEarned: participant.goldEarned || 0,
+            role: participant.role || '',
+            lane: participant.lane || ''
           };
         })
         .filter((match): match is NonNullable<typeof match> => match !== null);
+  
+      console.log('Filtered matches for champion:', {
+        total: championMatches.length,
+        championId: currentChampionId
+      });
   
       // Analyze item builds
       const itemFrequency: { [key: string]: { count: number; winCount: number } } = {};
@@ -192,7 +249,7 @@ const makeRiotRequest = async (url: string) => {
         });
       });
   
-      return {
+      const analysis = {
         championId: currentChampionId,
         matchCount: championMatches.length,
         wins: championMatches.filter(m => m.win).length,
@@ -204,8 +261,17 @@ const makeRiotRequest = async (url: string) => {
         matches: championMatches,
         commonItems: itemFrequency
       };
+  
+      console.log('Analysis complete:', {
+        championId: currentChampionId,
+        matchesAnalyzed: analysis.matchCount,
+        winRate: `${((analysis.wins / analysis.matchCount) * 100).toFixed(1)}%`,
+        itemsFound: Object.keys(analysis.commonItems).length
+      });
+  
+      return analysis;
     } catch (error) {
-      console.error('Error analyzing champion performance:', error);
+      console.error('Error in analyzeChampionPerformance:', error);
       throw error;
     }
   };
