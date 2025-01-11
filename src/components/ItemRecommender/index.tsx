@@ -16,6 +16,8 @@ const ItemRecommender: React.FC = () => {
   const [data, setData] = useState<ApiResponse | null>(null);
 
   const fetchGameData = async () => {
+    console.log('Fetching game data...', { summonerName, tagLine, region }); // Debug log
+
     if (!summonerName.trim()) {
       setError('Please enter a summoner name');
       return;
@@ -25,10 +27,14 @@ const ItemRecommender: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}`
-      );
-      const result: ApiResponse = await response.json();
+      const url = `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}`;
+      console.log('Fetching URL:', url); // Debug log
+
+      const response = await fetch(url);
+      console.log('Response status:', response.status); // Debug log
+
+      const result = await response.json();
+      console.log('API Response:', result); // Debug log
 
       if (!response.ok) {
         throw new Error(result.error || 'An error occurred');
@@ -36,11 +42,14 @@ const ItemRecommender: React.FC = () => {
 
       setData(result);
     } catch (err) {
+      console.error('Error in fetchGameData:', err); // Debug log
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
+
+  console.log('Current state:', { loading, error, data }); // Debug log
 
   const liveGame = data?.liveGame ? {
     ...data.liveGame,
@@ -72,6 +81,16 @@ const ItemRecommender: React.FC = () => {
             </Alert>
           )}
           {liveGame && <LiveGameDisplay liveGame={liveGame} region={region} />}
+          
+          {/* Debug display */}
+          <div className="mt-4 p-4 bg-gray-800 rounded text-xs text-gray-300">
+            <pre>
+              Debug State:
+              Loading: {loading.toString()}
+              Error: {error || 'none'}
+              Has Data: {data ? 'yes' : 'no'}
+            </pre>
+          </div>
         </div>
       </CardContent>
     </Card>
