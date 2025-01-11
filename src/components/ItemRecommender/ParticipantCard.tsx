@@ -118,7 +118,7 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
               {participant.championId}
             </div>
             <div>
-              <h4 className="text-white font-semibold">{participant.summonerName}</h4>
+              <h4 className="text-white font-semibold">{displayName}</h4>
               <p className="text-sm text-gray-300">
                 {participant.teamPosition || 'Unknown Position'}
               </p>
