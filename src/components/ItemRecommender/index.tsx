@@ -1,113 +1,119 @@
-'use client';
+// src/components/ItemRecommender/LastMatchDisplay.tsx
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Match, MatchParticipant } from '@/types/game';
 
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { SearchSection } from './SearchSection';
-import { LiveGameDisplay } from './LiveGameDisplay';
-import { LastMatchDisplay } from './LastMatchDisplay';
-import { ApiResponse } from '@/types/game';
+interface LastMatchDisplayProps {
+  lastMatch: Match;
+  summoner: {
+    name: string;
+    profileIconId: number;
+  };
+}
 
-const ItemRecommender: React.FC = () => {
-  const [summonerName, setSummonerName] = useState('');
-  const [tagLine, setTagLine] = useState('NA1');
-  const [region, setRegion] = useState('NA1');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<ApiResponse | null>(null);
-
-  const fetchGameData = async () => {
-    if (!summonerName.trim()) {
-      setError('Please enter a summoner name');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/live-game?summoner=${encodeURIComponent(summonerName)}&tagLine=${encodeURIComponent(tagLine)}&region=${region}`
-      );
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'An error occurred');
+export const LastMatchDisplay: React.FC<LastMatchDisplayProps> = ({ lastMatch, summoner }) => {
+  console.log('LastMatch Data:', lastMatch);
+  console.log('Summoner Data:', summoner);
+  
+  // Find the player's data in the match
+  const playerData = lastMatch.info.participants.find(
+    (p: MatchParticipant) => {
+      // Add null check and debug logging
+      if (!summoner.name) {
+        console.log('Summoner name is undefined');
+        return false;
       }
-
-      setData(result);
-    } catch (err) {
-      console.error('Error in fetchGameData:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
+      console.log('Comparing:', p.summonerName, 'with', summoner.name);
+      return p.summonerName.toLowerCase() === summoner.name.toLowerCase();
     }
+  );
+  
+  console.log('Found Player Data:', playerData);
+
+  const getGameDuration = () => {
+    const minutes = Math.floor(lastMatch.info.gameDuration / 60);
+    const seconds = lastMatch.info.gameDuration % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const liveGame = data?.liveGame ? {
-    ...data.liveGame,
-    gameQueueConfigId: data.liveGame.gameQueueConfigId || 0,
-    observers: data.liveGame.observers || { encryptionKey: '' },
-    platformId: data.liveGame.platformId || '',
-    bannedChampions: data.liveGame.bannedChampions || [],
-    gameStartTime: data.liveGame.gameStartTime || 0,
-    gameLength: data.liveGame.gameLength || 0,
-  } : null;
+  const getGameResult = () => {
+    if (!playerData) return 'Unknown';
+    return playerData.win ? 'Victory' : 'Defeat';
+  };
+
+  const getKDA = () => {
+    if (!playerData) return 'Unknown';
+    return `${playerData.kills}/${playerData.deaths}/${playerData.assists}`;
+  };
+
+  if (!summoner.name) {
+    return (
+      <Card className="bg-gray-800 border-gray-700">
+        <CardContent>
+          <div className="text-red-400">Error: Invalid summoner data</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto bg-gray-900 border-gray-800">
-      <CardContent className="p-6">
+    <Card className="bg-gray-800 border-gray-700">
+      <CardHeader>
+        <CardTitle className="text-blue-400">Last Match Summary for {summoner.name}</CardTitle>
+      </CardHeader>
+      <CardContent>
         <div className="space-y-4">
-          <SearchSection
-            summonerName={summonerName}
-            tagLine={tagLine}
-            region={region}
-            loading={loading}
-            onSummonerNameChange={setSummonerName}
-            onTagLineChange={setTagLine}
-            onRegionChange={setRegion}
-            onSearch={fetchGameData}
-          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-gray-700 rounded-lg">
+              <div className="text-gray-400 text-sm">Game Type</div>
+              <div className="text-white font-medium">{lastMatch.info.gameMode}</div>
+            </div>
+            <div className="p-4 bg-gray-700 rounded-lg">
+              <div className="text-gray-400 text-sm">Duration</div>
+              <div className="text-white font-medium">{getGameDuration()}</div>
+            </div>
+            <div className="p-4 bg-gray-700 rounded-lg">
+              <div className="text-gray-400 text-sm">Result</div>
+              <div className={`font-medium ${getGameResult() === 'Victory' ? 'text-green-400' : 'text-red-400'}`}>
+                {getGameResult()}
+              </div>
+            </div>
+            <div className="p-4 bg-gray-700 rounded-lg">
+              <div className="text-gray-400 text-sm">KDA</div>
+              <div className="text-white font-medium">{getKDA()}</div>
+            </div>
+          </div>
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {data && (
-            <div className="space-y-4">
-              {liveGame ? (
-                <>
-                  <Alert>
-                    <AlertDescription>Player is currently in game!</AlertDescription>
-                  </Alert>
-                  <LiveGameDisplay liveGame={liveGame} region={region} />
-                </>
-              ) : data.lastMatch ? (
-                <>
-                  <Alert>
-                    <AlertDescription>Player is not in game. Showing last match data.</AlertDescription>
-                  </Alert>
-                  <LastMatchDisplay 
-                    lastMatch={data.lastMatch}
-                    summoner={{
-                      name: data.summoner.name,
-                      profileIconId: data.summoner.profileIconId
-                    }}
-                  />
-                </>
-              ) : (
-                <Alert>
-                  <AlertDescription>No recent matches found for this player.</AlertDescription>
-                </Alert>
-              )}
+          {playerData && (
+            <div className="p-4 bg-gray-700 rounded-lg">
+              <h4 className="text-white font-medium mb-2">Champion: {playerData.championName}</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <div className="text-gray-400 text-sm">Damage Dealt</div>
+                  <div className="text-white">{playerData.totalDamageDealtToChampions.toLocaleString()}</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 text-sm">Gold Earned</div>
+                  <div className="text-white">{playerData.goldEarned.toLocaleString()}</div>
+                </div>
+                <div>
+                  <div className="text-gray-400 text-sm">Vision Score</div>
+                  <div className="text-white">{playerData.visionScore}</div>
+                </div>
+              </div>
             </div>
           )}
+
+          {/* Debug display */}
+          <div className="mt-4 p-4 bg-gray-900 rounded text-xs text-gray-300">
+            <pre>
+              Debug Info:
+              Summoner Name: {summoner.name}
+              Participants: {lastMatch.info.participants.map(p => p.summonerName).join(', ')}
+              Found Player: {playerData ? 'Yes' : 'No'}
+            </pre>
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 };
-
-export default ItemRecommender;
