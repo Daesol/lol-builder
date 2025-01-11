@@ -127,14 +127,45 @@ const makeRiotRequest = async (url: string) => {
     avgGold: number;
     matches: ChampionMatchData[];
   }
+
+  interface ChampionPerformance {
+    championId: number;
+    matchCount: number;
+    wins: number;
+    totalKills: number;
+    totalDeaths: number;
+    totalAssists: number;
+    totalDamageDealt: number;
+    totalGoldEarned: number;
+    matches: Array<{
+      matchId: string;
+      gameCreation: number;
+      gameDuration: number;
+      win: boolean;
+      kills: number;
+      deaths: number;
+      assists: number;
+      itemBuild: number[];
+      damageDealt: number;
+      goldEarned: number;
+      role: string;
+      lane: string;
+    }>;
+    commonItems: {
+      [key: string]: {
+        count: number;
+        winCount: number;
+      };
+    };
+  }
   
-  export const analyzeParticipantChampions = async (
+  export const analyzeChampionPerformance = async (
     puuid: string, 
-    summonerId: string, 
-    region: string
-  ): Promise<ChampionAnalysis[]> => {
+    region: string, 
+    currentChampionId: number
+  ): Promise<ChampionPerformance> => {
     try {
-      // Get recent matches
+      // Get last 20 matches
       const matchIds = await getParticipantMatchHistory(puuid, region, 20);
       
       // Get details for all matches
@@ -142,82 +173,64 @@ const makeRiotRequest = async (url: string) => {
         matchIds.map((matchId: string) => getMatchDetails(matchId, region))
       );
   
-      // Analyze champion usage and performance
-      const championStats: Record<number, {
-        championId: number;
-        championName: string;
-        games: number;
-        wins: number;
-        kills: number;
-        deaths: number;
-        assists: number;
-        totalDamageDealt: number;
-        goldEarned: number;
-        matches: ChampionMatchData[];
-      }> = {};
-  
-      // Process each match
-      matchDetails.forEach(match => {
-        const participant = match.info.participants.find((p: { puuid: string; }) => p.puuid === puuid);
-        if (!participant) return;
-  
-        if (!championStats[participant.championId]) {
-          championStats[participant.championId] = {
-            championId: participant.championId,
-            championName: participant.championName,
-            games: 0,
-            wins: 0,
-            kills: 0,
-            deaths: 0,
-            assists: 0,
-            totalDamageDealt: 0,
-            goldEarned: 0,
-            matches: []
+      // Filter and analyze matches only for the current champion
+      const championMatches = matchDetails
+        .map(match => {
+          const participant = match.info.participants.find((p: { puuid: string; }) => p.puuid === puuid);
+          if (!participant || participant.championId !== currentChampionId) return null;
+          return {
+            matchId: match.metadata.matchId,
+            gameCreation: match.info.gameCreation,
+            gameDuration: match.info.gameDuration,
+            win: participant.win,
+            kills: participant.kills,
+            deaths: participant.deaths,
+            assists: participant.assists,
+            itemBuild: [
+              participant.item0,
+              participant.item1,
+              participant.item2,
+              participant.item3,
+              participant.item4,
+              participant.item5,
+              participant.item6
+            ].filter(item => item !== 0), // Remove empty item slots
+            damageDealt: participant.totalDamageDealtToChampions,
+            goldEarned: participant.goldEarned,
+            role: participant.role,
+            lane: participant.lane
           };
-        }
+        })
+        .filter((match): match is NonNullable<typeof match> => match !== null);
   
-        const stats = championStats[participant.championId];
-        stats.games++;
-        if (participant.win) stats.wins++;
-        stats.kills += participant.kills;
-        stats.deaths += participant.deaths;
-        stats.assists += participant.assists;
-        stats.totalDamageDealt += participant.totalDamageDealtToChampions;
-        stats.goldEarned += participant.goldEarned;
-        stats.matches.push({
-          matchId: match.metadata.matchId,
-          gameCreation: match.info.gameCreation,
-          gameDuration: match.info.gameDuration,
-          win: participant.win,
-          kills: participant.kills,
-          deaths: participant.deaths,
-          assists: participant.assists,
-          totalDamageDealt: participant.totalDamageDealtToChampions,
-          goldEarned: participant.goldEarned,
-          itemBuild: [
-            participant.item0,
-            participant.item1,
-            participant.item2,
-            participant.item3,
-            participant.item4,
-            participant.item5,
-            participant.item6
-          ]
+      // Analyze item builds
+      const itemFrequency: { [key: string]: { count: number; winCount: number } } = {};
+      championMatches.forEach(match => {
+        match.itemBuild.forEach(itemId => {
+          if (!itemFrequency[itemId]) {
+            itemFrequency[itemId] = { count: 0, winCount: 0 };
+          }
+          itemFrequency[itemId].count++;
+          if (match.win) {
+            itemFrequency[itemId].winCount++;
+          }
         });
       });
   
-      // Convert to array and sort by games played
-      return Object.values(championStats)
-        .sort((a, b) => b.games - a.games)
-        .map(stats => ({
-          ...stats,
-          winRate: (stats.wins / stats.games * 100).toFixed(1),
-          avgKDA: ((stats.kills + stats.assists) / Math.max(1, stats.deaths)).toFixed(2),
-          avgDamage: Math.round(stats.totalDamageDealt / stats.games),
-          avgGold: Math.round(stats.goldEarned / stats.games)
-        }));
+      return {
+        championId: currentChampionId,
+        matchCount: championMatches.length,
+        wins: championMatches.filter(m => m.win).length,
+        totalKills: championMatches.reduce((sum, m) => sum + m.kills, 0),
+        totalDeaths: championMatches.reduce((sum, m) => sum + m.deaths, 0),
+        totalAssists: championMatches.reduce((sum, m) => sum + m.assists, 0),
+        totalDamageDealt: championMatches.reduce((sum, m) => sum + m.damageDealt, 0),
+        totalGoldEarned: championMatches.reduce((sum, m) => sum + m.goldEarned, 0),
+        matches: championMatches,
+        commonItems: itemFrequency
+      };
     } catch (error) {
-      console.error('Error analyzing participant champions:', error);
+      console.error('Error analyzing champion performance:', error);
       throw error;
     }
   };
