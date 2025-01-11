@@ -9,6 +9,7 @@ export interface Account {
   export interface LiveGameParticipant {
     riotIdGameName: string;  // Add this
     riotIdTagline: string; 
+    riotId: string;
     puuid: string;
     kills: number;
     deaths: number;
