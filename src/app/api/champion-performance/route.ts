@@ -26,11 +26,13 @@ export async function GET(request: Request) {
 
     try {
       // For both live game and last match analysis
+      console.log('Starting champion analysis...');
       const analysis = await analyzeChampionPerformance(
         puuid,
         region,
         parseInt(championId, 10)
       );
+      console.log('Analysis completed:', analysis);
 
       return NextResponse.json(analysis);
     } catch (err) {
