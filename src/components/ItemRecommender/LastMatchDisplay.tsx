@@ -11,10 +11,16 @@ interface LastMatchDisplayProps {
 }
 
 export const LastMatchDisplay: React.FC<LastMatchDisplayProps> = ({ lastMatch, summoner }) => {
-  // Find the player's data in the match
+  console.log('LastMatch Data:', lastMatch);
+  console.log('Summoner Data:', summoner);
+  console.log('Participants:', lastMatch.info.participants);
+  
+  // Find the player's data in the match - use puuid or exact name match
   const playerData = lastMatch.info.participants.find(
-    (p: MatchParticipant) => p.summonerName === summoner.name
+    (p: MatchParticipant) => p.summonerName.toLowerCase() === summoner.name.toLowerCase()
   );
+  
+  console.log('Found Player Data:', playerData);
 
   const getGameDuration = () => {
     const minutes = Math.floor(lastMatch.info.gameDuration / 60);
@@ -23,12 +29,18 @@ export const LastMatchDisplay: React.FC<LastMatchDisplayProps> = ({ lastMatch, s
   };
 
   const getGameResult = () => {
-    if (!playerData) return 'Unknown';
+    if (!playerData) {
+      console.log('No player data found for game result');
+      return 'Unknown';
+    }
     return playerData.win ? 'Victory' : 'Defeat';
   };
 
   const getKDA = () => {
-    if (!playerData) return 'Unknown';
+    if (!playerData) {
+      console.log('No player data found for KDA');
+      return 'Unknown';
+    }
     return `${playerData.kills}/${playerData.deaths}/${playerData.assists}`;
   };
 
@@ -79,6 +91,16 @@ export const LastMatchDisplay: React.FC<LastMatchDisplayProps> = ({ lastMatch, s
               </div>
             </div>
           )}
+
+          {/* Debug display */}
+          <div className="mt-4 p-4 bg-gray-900 rounded text-xs text-gray-300">
+            <pre>
+              Debug Info:
+              Summoner Name: {summoner.name}
+              Found Player: {playerData ? 'Yes' : 'No'}
+              Total Participants: {lastMatch.info.participants.length}
+            </pre>
+          </div>
         </div>
       </CardContent>
     </Card>
