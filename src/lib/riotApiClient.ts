@@ -1,14 +1,8 @@
 // src/lib/riotApiClient.ts
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { LiveGame } from "@/types/game";
 import { RateLimit } from './rateLimit';
-
-interface ApiError {
-  status: number;
-  message: string;
-  details?: unknown;
-}
 
 
 // Define response types
