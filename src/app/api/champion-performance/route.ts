@@ -22,23 +22,30 @@ export async function GET(request: Request) {
       );
     }
 
-    const analysis = await analyzeChampionPerformance(
-      puuid,
-      region,
-      parseInt(championId, 10)
-    );
+    try {
+      const analysis = await analyzeChampionPerformance(
+        puuid,
+        region,
+        parseInt(championId, 10)
+      );
 
-    console.log('Analysis completed:', {
-      championId,
-      matchCount: analysis.matchCount,
-      summonerId: puuid
-    });
+      console.log('Analysis completed:', {
+        championId,
+        matchCount: analysis.matchCount
+      });
 
-    return NextResponse.json(analysis);
+      return NextResponse.json(analysis);
+    } catch (err) {
+      console.error('Analysis error:', err);
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : 'Analysis failed' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error('Error in champion performance analysis:', error);
+    console.error('Route error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Analysis failed' },
+      { error: error instanceof Error ? error.message : 'Route failed' },
       { status: 500 }
     );
   }
