@@ -1,6 +1,7 @@
 // src/components/ItemRecommender/LastMatchAnalysis.tsx
 'use client';
 
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Match, MatchParticipant, LiveGameParticipant } from '@/types/game';
 import { ParticipantCard } from './ParticipantCard';
@@ -23,24 +24,23 @@ export const LastMatchAnalysis: React.FC<LastMatchAnalysisProps> = ({ lastMatch,
     deaths: participant.deaths,
     assists: participant.assists,
     teamId: participant.teamId,
-    spell1Id: 0, // Default value as not available in match history
-    spell2Id: 0, // Default value as not available in match history
+    spell1Id: 0,
+    spell2Id: 0,
     championId: participant.championId,
     championName: participant.championName,
-    profileIconId: 0, // Default value
+    profileIconId: 0,
     summonerName: participant.summonerName,
-    riotIdGameName: participant.summonerName, // Using summonerName as riotIdGameName
-    riotIdTagline: region, // Using provided region as tagline
-    riotId: `${participant.summonerName}#${region}`, // Constructing riotId
+    riotIdGameName: participant.summonerName,
+    riotIdTagline: region,
+    riotId: `${participant.summonerName}#${region}`,
     bot: false,
-    summonerId: participant.puuid, // Using puuid as summonerId for match history
-    gameCustomizationObjects: [], // Empty array as not available in match history
+    summonerId: participant.puuid, // Using puuid for analysis
+    gameCustomizationObjects: [],
     perks: {
       perkIds: [],
       perkStyle: 0,
       perkSubStyle: 0
     },
-    // Adding item slots
     item0: 0,
     item1: 0,
     item2: 0,
@@ -104,6 +104,7 @@ export const LastMatchAnalysis: React.FC<LastMatchAnalysisProps> = ({ lastMatch,
                   goldEarned: participant.goldEarned,
                   win: participant.win
                 }}
+                enableAnalysis={true} // Add this flag
               />
             ))}
           </div>
@@ -129,6 +130,7 @@ export const LastMatchAnalysis: React.FC<LastMatchAnalysisProps> = ({ lastMatch,
                   goldEarned: participant.goldEarned,
                   win: participant.win
                 }}
+                enableAnalysis={true} // Add this flag
               />
             ))}
           </div>
