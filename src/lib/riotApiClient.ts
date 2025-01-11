@@ -1,5 +1,32 @@
 // src/lib/riotApiClient.ts
+// Add this interface at the top of your riotApiClient.ts file
+interface RankEntry {
+    leagueId: string;
+    queueType: string;
+    tier: string;
+    rank: string;
+    summonerId: string;
+    summonerName: string;
+    leaguePoints: number;
+    wins: number;
+    losses: number;
+    veteran: boolean;
+    inactive: boolean;
+    freshBlood: boolean;
+    hotStreak: boolean;
+  }
+  
+  export const getRankData = async (summonerId: string, region: string) => {
+    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`;
+    const data = await makeRiotRequest(url) as RankEntry[];
+    if (!data) return null;
+    
+    // Find the solo queue rank
+    const soloQueue = data.find((queue) => queue.queueType === 'RANKED_SOLO_5x5');
+    return soloQueue || null;
+  };
 
+  
 const makeRiotRequest = async (url: string) => {
     const apiKey = process.env.RIOT_API_KEY;
     console.log('Making request:', {
@@ -93,12 +120,4 @@ const makeRiotRequest = async (url: string) => {
     return data;
   };
 
-  export const getRankData = async (summonerId: string, region: string) => {
-    const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`;
-    const data = await makeRiotRequest(url);
-    if (!data) return null;
-    
-    // Find the solo queue rank
-    const soloQueue = data.find((queue: any) => queue.queueType === 'RANKED_SOLO_5x5');
-    return soloQueue || null;
-  };
+  

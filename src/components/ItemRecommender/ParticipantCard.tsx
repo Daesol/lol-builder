@@ -1,6 +1,5 @@
 // src/components/ItemRecommender/ParticipantCard.tsx
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { LiveGameParticipant } from '@/types/game';
 import { getRankData } from '@/lib/riotApiClient';
 
@@ -63,7 +62,6 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
     >
       <div className="flex-1 space-y-1">
         <div className="flex items-center gap-2">
-          {/* Champion icon placeholder - you'll need to implement champion icon fetching */}
           <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
           <div>
             <h4 className="text-white font-semibold">{participant.summonerName}</h4>
