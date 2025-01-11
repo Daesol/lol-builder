@@ -7,7 +7,20 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+interface MatchStats {
+  kills: number;
+  deaths: number;
+  assists: number;
+  totalDamageDealt: number;
+  goldEarned: number;
+  win: boolean;
+}
+
 interface PerformanceData {
+  riotId: number;
+  riotIdGameName: string;
+  riotIdTagline: string;
+  kills: number;
   championId: number;
   matchCount: number;
   wins: number;
@@ -41,9 +54,10 @@ interface PerformanceData {
 interface ParticipantCardProps {
   participant: LiveGameParticipant;
   region: string;
+  matchStats?: MatchStats;
 }
 
-export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, region }) => {
+export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, region, matchStats }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -128,6 +142,11 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
             <p className={participant.teamId === 100 ? 'text-blue-400' : 'text-red-400'}>
               {participant.teamId === 100 ? 'Blue Team' : 'Red Team'}
             </p>
+            {matchStats && (
+              <p className="text-sm text-gray-300">
+                {matchStats.kills}/{matchStats.deaths}/{matchStats.assists}
+              </p>
+            )}
           </div>
         </div>
         
@@ -143,6 +162,38 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, r
 
       {isExpanded && (
         <div className="pl-4">
+          {/* Match Stats Section */}
+          {matchStats && (
+            <div className="bg-gray-800 rounded p-4 mb-4">
+              <h5 className="text-white text-sm mb-3">Match Performance</h5>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-gray-700 p-2 rounded">
+                  <div className="text-gray-400 text-xs">KDA</div>
+                  <div className="text-white">
+                    {matchStats.kills}/{matchStats.deaths}/{matchStats.assists}
+                  </div>
+                </div>
+                <div className="bg-gray-700 p-2 rounded">
+                  <div className="text-gray-400 text-xs">Damage</div>
+                  <div className="text-white">
+                    {matchStats.totalDamageDealt.toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-gray-700 p-2 rounded">
+                  <div className="text-gray-400 text-xs">Gold</div>
+                  <div className="text-white">
+                    {matchStats.goldEarned.toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-gray-700 p-2 rounded">
+                  <div className="text-gray-400 text-xs">Result</div>
+                  <div className={matchStats.win ? 'text-green-400' : 'text-red-400'}>
+                    {matchStats.win ? 'Victory' : 'Defeat'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           {isLoading && (
             <div className="text-center py-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>

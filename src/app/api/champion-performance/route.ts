@@ -8,11 +8,13 @@ export async function GET(request: Request) {
     const puuid = searchParams.get('puuid');
     const championId = searchParams.get('championId');
     const region = searchParams.get('region') || 'NA1';
+    const summonerId = searchParams.get('summonerId');
 
     console.log('Champion Performance API called:', {
       puuid,
       championId,
-      region
+      region,
+      summonerId
     });
 
     if (!puuid || !championId) {
@@ -23,16 +25,12 @@ export async function GET(request: Request) {
     }
 
     try {
+      // For both live game and last match analysis
       const analysis = await analyzeChampionPerformance(
         puuid,
         region,
         parseInt(championId, 10)
       );
-
-      console.log('Analysis completed:', {
-        championId,
-        matchCount: analysis.matchCount
-      });
 
       return NextResponse.json(analysis);
     } catch (err) {

@@ -7,6 +7,7 @@ import { SearchSection } from './SearchSection';
 import { LiveGameDisplay } from './LiveGameDisplay';
 import { LastMatchDisplay } from './LastMatchDisplay';
 import { ApiResponse } from '@/types/game';
+import { LastMatchAnalysis } from './LastMatchAnalysis';
 
 const ItemRecommender = () => {
   const [summonerName, setSummonerName] = useState('');
@@ -75,6 +76,7 @@ const ItemRecommender = () => {
               profileIconId: data.summoner.profileIconId
             }}
           />
+          <LastMatchAnalysis lastMatch={data.lastMatch} region={region} />
         </>
       );
     }
