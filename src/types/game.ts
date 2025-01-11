@@ -173,3 +173,47 @@ export interface Account {
     participant: ChampionAnalysisParticipant;
     region: string;
   }
+
+  export interface ChampionPerformance {
+    championId: number;
+    matchCount: number;
+    wins: number;
+    totalKills: number;
+    totalDeaths: number;
+    totalAssists: number;
+    totalDamageDealt: number;
+    totalGoldEarned: number;
+    matches: Array<{
+      matchId: string;
+      gameCreation: number;
+      gameDuration: number;
+      win: boolean;
+      kills: number;
+      deaths: number;
+      assists: number;
+      itemBuild: number[];
+      damageDealt: number;
+      goldEarned: number;
+      role: string;
+      lane: string;
+    }>;
+    commonItems: {
+      [key: string]: {
+        count: number;
+        winCount: number;
+      };
+    };
+  }
+  
+  export interface LiveGameAnalysis {
+    timestamp: number;
+    gameId: number;
+    gameMode: string;
+    participants: Array<{
+      summonerId: string;
+      summonerName: string;
+      championId: number;
+      teamId: number;
+      championAnalysis: ChampionPerformance;
+    }>;
+  }

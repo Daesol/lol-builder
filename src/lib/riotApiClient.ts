@@ -2,6 +2,11 @@
 
 import { LiveGame } from "@/types/game";
 
+// Define response types
+interface RiotApiResponse {
+  [key: string]: any;
+}
+
 // Rate Limiter Implementation
 class RateLimit {
   private queue: (() => Promise<any>)[] = [];
@@ -72,8 +77,7 @@ class RateLimit {
 // Create rate limiter instance
 const rateLimit = new RateLimit();
 
-// Base request function with rate limiting
-const makeRiotRequest = async (url: string) => {
+const makeRiotRequest = async (url: string): Promise<RiotApiResponse | null> => {
   return rateLimit.enqueue(async () => {
     const apiKey = process.env.RIOT_API_KEY;
     console.log('Making request:', {
@@ -91,11 +95,10 @@ const makeRiotRequest = async (url: string) => {
     console.log('Response status:', response.status);
 
     if (response.status === 429) {
-      // Handle rate limit exceeded
       const retryAfter = response.headers.get('Retry-After') || '1';
       console.log(`Rate limit exceeded, waiting ${retryAfter}s`);
       await new Promise(resolve => setTimeout(resolve, parseInt(retryAfter) * 1000));
-      return makeRiotRequest(url); // Retry the request
+      return makeRiotRequest(url);
     }
 
     if (response.status === 404) {
@@ -104,7 +107,7 @@ const makeRiotRequest = async (url: string) => {
 
     const text = await response.text();
     try {
-      const data = JSON.parse(text);
+      const data = JSON.parse(text) as RiotApiResponse;
       if (!response.ok) {
         console.error('API Error:', {
           status: response.status,
@@ -119,6 +122,7 @@ const makeRiotRequest = async (url: string) => {
     }
   });
 };
+
 
 // API Endpoints
 export const getAccountData = async (summonerName: string, tagLine: string) => {

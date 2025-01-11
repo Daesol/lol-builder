@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LiveGameParticipant } from '@/types/game';
+import { ChampionPerformance, LiveGameParticipant } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -51,16 +51,18 @@ interface ParticipantCardProps {
   region: string;
   matchStats?: MatchStats;
   enableAnalysis?: boolean;
+  initialAnalysis?: ChampionPerformance;
 }
 
 export const ParticipantCard: React.FC<ParticipantCardProps> = ({ 
   participant, 
   region, 
   matchStats,
-  enableAnalysis = false
+  enableAnalysis = false,
+  initialAnalysis
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [performanceData, setPerformanceData] = useState<ChampionPerformance | null>(initialAnalysis || null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
