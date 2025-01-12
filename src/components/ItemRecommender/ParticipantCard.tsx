@@ -1,59 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ChampionPerformance, LiveGameParticipant } from '@/types/game';
+import { LiveGameParticipant } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-interface MatchStats {
-  kills: number;
-  deaths: number;
-  assists: number;
-  totalDamageDealt: number;
-  goldEarned: number;
-  win: boolean;
-}
-
-// interface PerformanceData {
-//   championId: number;
-//   matchCount: number;
-//   wins: number;
-//   totalKills: number;
-//   totalDeaths: number;
-//   totalAssists: number;
-//   totalDamageDealt: number;
-//   totalGoldEarned: number;
-//   matches: Array<{
-//     matchId: string;
-//     gameCreation: number;
-//     gameDuration: number;
-//     win: boolean;
-//     kills: number;
-//     deaths: number;
-//     assists: number;
-//     itemBuild: number[];
-//     damageDealt: number;
-//     goldEarned: number;
-//     role: string;
-//     lane: string;
-//   }>;
-//   commonItems: {
-//     [key: string]: {
-//       count: number;
-//       winCount: number;
-//     };
-//   };
-// }
-
-interface ParticipantCardProps {
-  participant: LiveGameParticipant;
-  region: string;
-  matchStats?: MatchStats;
-  enableAnalysis?: boolean;
-  initialAnalysis?: ChampionPerformance;
-}
-
+import { ItemSlots } from '@/components/ItemRecommender/ItemSlots';
+import type { 
+  ParticipantCardProps, 
+  ChampionPerformance, 
+  MatchStats,
+  ItemStats
+} from './types';
 
 export const ParticipantCard: React.FC<ParticipantCardProps> = ({ 
   participant, 
@@ -66,6 +24,7 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
   const [performanceData, setPerformanceData] = useState<ChampionPerformance | null>(initialAnalysis || null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mostCommonItems, setMostCommonItems] = useState<number[]>([]);
 
   const displayName = participant.riotIdGameName || participant.summonerName || `Champion ${participant.championId}`;
 
@@ -98,6 +57,16 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
 
       console.log('Performance data received:', data);
       setPerformanceData(data);
+
+      // Process common items and sort them by count
+      // Type assertion for the entire entries array
+const entries = Object.entries(data.commonItems) as [string, ItemStats][];
+const sortedItems = entries
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 6)
+        .map(([itemId]) => parseInt(itemId));
+      
+      setMostCommonItems(sortedItems);
     } catch (err) {
       console.error('Error fetching performance:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch performance data');
@@ -109,6 +78,12 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
   useEffect(() => {
     fetchPerformanceData();
   }, [fetchPerformanceData]);
+
+  const getItemWinRate = (itemId: number) => {
+    if (!performanceData?.commonItems[itemId]) return null;
+    const { count, winCount } = performanceData.commonItems[itemId];
+    return ((winCount / count) * 100).toFixed(1);
+  };
 
   return (
     <div className="space-y-2">
@@ -239,19 +214,21 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
                   {performanceData.matchCount > 0 && (
                     <div className="mt-4">
                       <div className="text-gray-400 text-xs mb-2">Most Common Items</div>
-                      <div className="grid grid-cols-6 gap-1">
-                        {Object.entries(performanceData.commonItems)
-                          .sort(([, a], [, b]) => b.count - a.count)
-                          .slice(0, 6)
-                          .map(([itemId, data]) => (
-                            <div 
-                              key={itemId}
-                              className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-300"
-                              title={`Used in ${data.count} games (${((data.winCount / data.count) * 100).toFixed(1)}% win rate)`}
-                            >
-                              {itemId}
-                            </div>
-                          ))}
+                      <div className="space-y-2">
+                        <ItemSlots items={mostCommonItems} />
+                        <div className="grid grid-cols-6 gap-1">
+                          {mostCommonItems.map((itemId) => {
+                            const winRate = getItemWinRate(itemId);
+                            if (!winRate) return null;
+                            return (
+                              <div key={itemId} className="text-center">
+                                <div className="text-xs text-gray-400">
+                                  {winRate}% WR
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
