@@ -3,9 +3,11 @@ import type {
   Account, 
   Summoner, 
   Match, 
-  LiveGame 
+  LiveGame,
+  ChampionPerformance
 } from '@/types/game';
 import { RateLimit } from './rateLimit';
+import { analyzeLiveGame } from './performanceAnalyzer';
 
 interface RequestOptions {
   method?: string;
@@ -62,10 +64,7 @@ const makeRiotRequest = async (
       const text = await response.text();
       try {
         const data = JSON.parse(text);
-        
-        // Cache successful responses
         responseCache.set(cacheKey, { data, timestamp: Date.now() });
-        
         return data;
       } catch (error) {
         console.error('Failed to parse response:', text);
@@ -140,3 +139,7 @@ export const getMatchDetails = async (matchId: string, region: string): Promise<
     throw error;
   }
 };
+
+// Re-export analyzeLiveGame and provide an alias for getMatchIds
+export { analyzeLiveGame };
+export { getParticipantMatchHistory as getMatchIds };
