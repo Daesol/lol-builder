@@ -6,6 +6,16 @@ import {
   getLiveGameData,
   analyzeChampionPerformance
 } from '@/lib/riotApiClient';
+import { LiveGameParticipant, ChampionPerformance } from '@/types/game';
+
+interface ParticipantAnalysis {
+  summonerId: string;
+  analysis: ChampionPerformance | null;
+}
+
+interface AnalyzedParticipant extends LiveGameParticipant {
+  analysis: ChampionPerformance | null;
+}
 
 export async function GET(request: Request) {
   try {
@@ -43,19 +53,19 @@ export async function GET(request: Request) {
             return {
               summonerId: participant.summonerId,
               analysis
-            };
+            } as ParticipantAnalysis;
           } catch (error) {
             console.error(`Error analyzing participant ${participant.summonerName}:`, error);
             return {
               summonerId: participant.summonerId,
               analysis: null
-            };
+            } as ParticipantAnalysis;
           }
         })
       );
 
       // Add analyses to live game data
-      const analyzedParticipants = liveGameData.participants.map((participant: { summonerId: any; }) => {
+      const analyzedParticipants = liveGameData.participants.map((participant: AnalyzedParticipant) => {
         const analysis = participantAnalyses.find(
           pa => pa.status === 'fulfilled' && 
           pa.value?.summonerId === participant.summonerId
@@ -63,7 +73,7 @@ export async function GET(request: Request) {
         return {
           ...participant,
           analysis: analysis?.status === 'fulfilled' ? analysis.value.analysis : null
-        };
+        } as AnalyzedParticipant;
       });
 
       liveGameData.participants = analyzedParticipants;
