@@ -12,26 +12,34 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
   const [tooltips, setTooltips] = useState<Record<number, ItemData>>({});
   const [itemUrls, setItemUrls] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const loadItemData = async () => {
+      setLoading(true);
       try {
         const tooltipData: Record<number, ItemData> = {};
         const urlData: Record<number, string> = {};
         
-        await Promise.all(items.map(async (itemId) => {
-          if (itemId) {
-            const [itemInfo, imageUrl] = await Promise.all([
-              getItemInfo(itemId),
-              getItemImageUrl(itemId)
-            ]);
-            
-            if (itemInfo) {
-              tooltipData[itemId] = itemInfo;
-              urlData[itemId] = imageUrl;
+        await Promise.all(
+          items.map(async (itemId) => {
+            if (itemId) {
+              try {
+                const [itemInfo, imageUrl] = await Promise.all([
+                  getItemInfo(itemId),
+                  getItemImageUrl(itemId)
+                ]);
+                
+                if (itemInfo) {
+                  tooltipData[itemId] = itemInfo;
+                  urlData[itemId] = imageUrl;
+                }
+              } catch (error) {
+                console.error(`Error loading data for item ${itemId}:`, error);
+              }
             }
-          }
-        }));
+          })
+        );
         
         setTooltips(tooltipData);
         setItemUrls(urlData);
@@ -51,6 +59,11 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
     if (index < 6) slots[index] = item;
   });
 
+  const handleImageError = (itemId: number) => {
+    console.error(`Failed to load item image: ${itemId}`);
+    setImageErrors(prev => ({ ...prev, [itemId]: true }));
+  };
+
   return (
     <div className="grid grid-cols-3 gap-1">
       {slots.map((itemId, idx) => (
@@ -61,16 +74,16 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
           }`}
           title={itemId && tooltips[itemId] ? tooltips[itemId].name : `Empty Slot ${idx + 1}`}
         >
-          {itemId && itemUrls[itemId] ? (
+          {itemId && itemUrls[itemId] && !imageErrors[itemId] ? (
             <div className="relative w-8 h-8">
               <Image
                 src={itemUrls[itemId]}
                 alt={tooltips[itemId]?.name || `Item ${itemId}`}
-                fill
+                width={32}
+                height={32}
                 className="rounded object-cover"
-                onError={() => {
-                  console.error(`Failed to load item image: ${itemId}`);
-                }}
+                onError={() => handleImageError(itemId)}
+                unoptimized
               />
             </div>
           ) : (
