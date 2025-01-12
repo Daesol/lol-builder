@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { getItemImageUrl, getItemInfo } from '@/lib/ddragonClient';
 import type { ItemData } from '@/types/ddragon';
+import type { ItemSlotsProps } from './types';
 
-interface ItemSlotsProps {
-  items?: number[];
-}
-
-export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
+export const ItemSlots: React.FC<ItemSlotsProps> = ({ 
+  items = [], 
+  tooltipSuffix = () => '' 
+}) => {
   const [tooltips, setTooltips] = useState<Record<number, ItemData>>({});
   const [itemUrls, setItemUrls] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,6 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
     loadItemData();
   }, [items]);
 
-  // Always show 6 slots
   const slots = Array(6).fill(null);
   items.forEach((item, index) => {
     if (index < 6) slots[index] = item;
@@ -72,7 +71,10 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({ items = [] }) => {
           className={`relative w-8 h-8 rounded ${
             !itemId || loading ? 'bg-gray-800 border border-gray-700' : ''
           }`}
-          title={itemId && tooltips[itemId] ? tooltips[itemId].name : `Empty Slot ${idx + 1}`}
+          title={itemId && tooltips[itemId] 
+            ? `${tooltips[itemId].name}${tooltipSuffix(itemId)}`
+            : `Empty Slot ${idx + 1}`
+          }
         >
           {itemId && itemUrls[itemId] && !imageErrors[itemId] ? (
             <div className="relative w-8 h-8">

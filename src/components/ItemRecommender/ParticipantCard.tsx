@@ -214,9 +214,9 @@ const sortedItems = entries
                       <div className="text-gray-400 text-xs mb-2">Most Common Items</div>
                       <ItemSlots 
                         items={mostCommonItems} 
-                        tooltipSuffix={(itemId) => {
+                        tooltipSuffix={(itemId: number) => {
                           const winRate = getItemWinRate(itemId);
-                          return winRate ? ` (${winRate}% WR)` : '';
+                          return winRate ? ` (${winRate}% win rate)` : '';
                         }}
                       />
                     </div>

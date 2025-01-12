@@ -3,16 +3,15 @@
 // Import types we reference from game.ts
 import type { LiveGame, LiveGameParticipant } from '@/types/game';
 
-// Search Section Types
 export interface SearchSectionProps {
-  summonerName: string;
-  tagLine: string;
-  region: string;
-  loading: boolean;
-  onSummonerNameChange: (value: string) => void;
-  onTagLineChange: (value: string) => void;
-  onRegionChange: (value: string) => void;
-  onSearch: () => void;
+    summonerName: string;
+    tagLine: string;
+    region: string;
+    loading: boolean;
+    onSummonerNameChange: (value: string) => void;
+    onTagLineChange: (value: string) => void;
+    onRegionChange: (value: string) => void;
+    onSearch: () => void;
 }
 
 // Item Related Types
