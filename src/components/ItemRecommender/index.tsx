@@ -89,7 +89,7 @@ const ItemRecommender = () => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto bg-gray-900 border-gray-800">
+    <Card className="w-full max-w-5xl mx-auto bg-gray-900 border-gray-800">
       <CardContent className="p-6">
         <div className="space-y-4">
           <SearchSection
