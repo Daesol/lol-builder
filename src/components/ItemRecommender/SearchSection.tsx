@@ -1,17 +1,7 @@
 // src/components/ItemRecommender/SearchSection.tsx
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
-interface SearchSectionProps {
-  summonerName: string;
-  tagLine: string;
-  region: string;
-  loading: boolean;
-  onSummonerNameChange: (value: string) => void;
-  onTagLineChange: (value: string) => void;
-  onRegionChange: (value: string) => void;
-  onSearch: () => void;
-}
+import { SearchSectionProps } from './types';
 
 export const SearchSection: React.FC<SearchSectionProps> = ({
   summonerName,
