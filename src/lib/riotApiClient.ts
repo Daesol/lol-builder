@@ -3,11 +3,9 @@ import type {
   Account, 
   Summoner, 
   Match, 
-  LiveGame,
-  ChampionPerformance
+  LiveGame
 } from '@/types/game';
 import { RateLimit } from './rateLimit';
-import { analyzeLiveGame } from './performanceAnalyzer';
 
 interface RequestOptions {
   method?: string;
@@ -15,71 +13,63 @@ interface RequestOptions {
   region?: string;
 }
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
 // Create rate limiter instance
 const rateLimit = new RateLimit();
 
 // Cache for API responses
-const responseCache = new Map<string, { data: any; timestamp: number }>();
+const responseCache = new Map<string, CacheEntry<unknown>>();
 const CACHE_DURATION = 60 * 1000; // 1 minute cache
 
-const makeRiotRequest = async (
+const makeRiotRequest = async <T>(
   url: string, 
   options: RequestOptions = {}
-): Promise<any> => {
+): Promise<T | null> => {
   const cacheKey = url;
   const cachedResponse = responseCache.get(cacheKey);
   
   if (cachedResponse && Date.now() - cachedResponse.timestamp < CACHE_DURATION) {
-    return cachedResponse.data;
+    return cachedResponse.data as T;
   }
 
   return rateLimit.enqueue(async () => {
+    const apiKey = process.env.RIOT_API_KEY;
+    if (!apiKey) {
+      throw new Error('RIOT_API_KEY is not configured');
+    }
+
+    const response = await fetch(url, {
+      method: options.method || 'GET',
+      headers: {
+        'X-Riot-Token': apiKey
+      }
+    });
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('Retry-After') || '1', 10);
+      console.warn(`Rate limit exceeded, retry after ${retryAfter}s`);
+      throw new Error('Rate limit exceeded. Please try again later.');
+    }
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
     try {
-      const apiKey = process.env.RIOT_API_KEY;
-      if (!apiKey) {
-        throw new Error('RIOT_API_KEY is not configured');
-      }
-
-      const response = await fetch(url, {
-        method: options.method || 'GET',
-        headers: {
-          'X-Riot-Token': apiKey
-        }
-      });
-
-      if (response.status === 429) {
-        const retryAfter = parseInt(response.headers.get('Retry-After') || '1', 10);
-        console.warn(`Rate limit exceeded, retry after ${retryAfter}s`);
-        throw new Error('RATE_LIMIT');
-      }
-
-      if (response.status === 404) {
-        return null;
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
       const text = await response.text();
-      try {
-        const data = JSON.parse(text);
-        responseCache.set(cacheKey, { data, timestamp: Date.now() });
-        return data;
-      } catch (error) {
-        console.error('Failed to parse response:', text);
-        throw new Error('INVALID_JSON');
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === 'RATE_LIMIT') {
-          throw new Error('Rate limit exceeded. Please try again later.');
-        }
-        if (error.message === 'INVALID_JSON') {
-          throw new Error('Invalid response from Riot API.');
-        }
-      }
-      throw error;
+      const data = JSON.parse(text) as T;
+      responseCache.set(cacheKey, { data, timestamp: Date.now() });
+      return data;
+    } catch {
+      throw new Error('Invalid response from Riot API.');
     }
   });
 };
@@ -96,21 +86,21 @@ const getRegionalRoute = (region: string): string => {
 // API Functions using types from game.ts
 export const getAccountData = async (summonerName: string, tagLine: string): Promise<Account> => {
   const url = `https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(summonerName)}/${encodeURIComponent(tagLine)}`;
-  const data = await makeRiotRequest(url);
+  const data = await makeRiotRequest<Account>(url);
   if (!data) throw new Error('Account not found');
-  return data as Account;
+  return data;
 };
 
 export const getSummonerData = async (puuid: string, region: string): Promise<Summoner> => {
   const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`;
-  const data = await makeRiotRequest(url, { region });
+  const data = await makeRiotRequest<Summoner>(url, { region });
   if (!data) throw new Error('Summoner not found');
-  return data as Summoner;
+  return data;
 };
 
 export const getLiveGameData = async (summonerId: string, region: string): Promise<LiveGame | null> => {
   const url = `https://${region.toLowerCase()}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${summonerId}`;
-  return makeRiotRequest(url, { region });
+  return makeRiotRequest<LiveGame>(url, { region });
 };
 
 export const getParticipantMatchHistory = async (
@@ -121,9 +111,9 @@ export const getParticipantMatchHistory = async (
   const regionalRoute = getRegionalRoute(region);
   const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`;
   
-  const data = await makeRiotRequest(url, { region });
+  const data = await makeRiotRequest<string[]>(url, { region });
   if (!data || !Array.isArray(data)) return [];
-  return data as string[];
+  return data;
 };
 
 export const getMatchDetails = async (matchId: string, region: string): Promise<Match | null> => {
@@ -131,15 +121,12 @@ export const getMatchDetails = async (matchId: string, region: string): Promise<
   const url = `https://${regionalRoute}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
   
   try {
-    const data = await makeRiotRequest(url, { region });
-    if (!data) return null;
-    return data as Match;
-  } catch (error) {
-    console.error(`Failed to fetch match ${matchId}:`, error);
-    throw error;
+    return await makeRiotRequest<Match>(url, { region });
+  } catch (err) {
+    console.error(`Failed to fetch match ${matchId}:`, err);
+    throw err;
   }
 };
 
-// Re-export analyzeLiveGame and provide an alias for getMatchIds
-export { analyzeLiveGame };
+// Alias exports
 export { getParticipantMatchHistory as getMatchIds };
