@@ -18,6 +18,7 @@ export interface SearchSectionProps {
 // Item Related Types
 export interface ItemSlotsProps {
   items?: number[];
+  tooltipSuffix?: (itemId: number) => string;
 }
 
 export interface ItemStats {
