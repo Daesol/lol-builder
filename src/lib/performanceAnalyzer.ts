@@ -2,8 +2,7 @@
 import { 
     LiveGame, 
     LiveGameParticipant, 
-    Match, 
-    MatchParticipant,
+    Match,
     ChampionPerformance,
     LiveGameAnalysis
   } from '@/types/game';
@@ -163,4 +162,4 @@ import {
       gameMode: liveGame.gameMode,
       participants: participantAnalyses
     };
-  }
+  };
