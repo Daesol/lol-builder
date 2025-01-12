@@ -212,22 +212,13 @@ const sortedItems = entries
                   {performanceData.matchCount > 0 && (
                     <div className="mt-4">
                       <div className="text-gray-400 text-xs mb-2">Most Common Items</div>
-                      <div className="space-y-2">
-                        <ItemSlots items={mostCommonItems} />
-                        <div className="grid grid-cols-6 gap-1">
-                          {mostCommonItems.map((itemId) => {
-                            const winRate = getItemWinRate(itemId);
-                            if (!winRate) return null;
-                            return (
-                              <div key={itemId} className="text-center">
-                                <div className="text-xs text-gray-400">
-                                  {winRate}% WR
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      <ItemSlots 
+                        items={mostCommonItems} 
+                        tooltipSuffix={(itemId) => {
+                          const winRate = getItemWinRate(itemId);
+                          return winRate ? ` (${winRate}% WR)` : '';
+                        }}
+                      />
                     </div>
                   )}
                 </div>
