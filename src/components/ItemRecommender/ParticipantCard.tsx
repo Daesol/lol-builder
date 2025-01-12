@@ -114,7 +114,7 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
         {/* Stats */}
         <div className="grid grid-cols-3 gap-1 text-center text-sm">
           <div className="rounded bg-slate-900 p-1">
-            <div className="text-xs text-slate-400">KDA</div>
+            <div className="text-xxs text-slate-400">KDA</div>
             <div className="font-medium text-slate-100">
               {performanceData ? getAverageKDA() : '0/0/0'}
             </div>
