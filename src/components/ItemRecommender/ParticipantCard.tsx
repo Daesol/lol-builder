@@ -12,24 +12,18 @@ import type {
 export const ParticipantCard: React.FC<ParticipantCardProps> = ({ 
   participant, 
   region, 
-  matchStats,
   enableAnalysis = false,
   initialAnalysis
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [performanceData, setPerformanceData] = useState<ChampionPerformance | null>(initialAnalysis || null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mostCommonItems, setMostCommonItems] = useState<number[]>([]);
 
   const displayName = participant.riotIdGameName || participant.summonerName || `Champion ${participant.championId}`;
 
   const fetchPerformanceData = useCallback(async () => {
-    if (!isExpanded || performanceData || !enableAnalysis) return;
+    if (performanceData || !enableAnalysis) return;
     
-    setIsLoading(true);
-    setError(null);
-
     try {
       const response = await fetch(
         `/api/champion-performance?` + new URLSearchParams({
@@ -47,23 +41,18 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
 
       setPerformanceData(data);
 
-      // Process common items and sort them by count
-      // Type assertion for the entire entries array
       const entries = Object.entries(data.commonItems) as [string, ItemStats][];
       const sortedItems = entries
-              .sort((a, b) => b[1].count - a[1].count)
-              .slice(0, 6)
-              .map(([itemId]) => parseInt(itemId));
-      
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 6)
+        .map(([itemId]) => parseInt(itemId));
       
       setMostCommonItems(sortedItems);
     } catch (err) {
       console.error('Error fetching performance:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch performance data');
-    } finally {
-      setIsLoading(false);
     }
-  }, [isExpanded, performanceData, enableAnalysis, participant.summonerId, participant.championId, region]);
+  }, [performanceData, enableAnalysis, participant.summonerId, participant.championId, region]);
 
   useEffect(() => {
     fetchPerformanceData();
