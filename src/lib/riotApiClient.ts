@@ -6,6 +6,7 @@ import type {
   LiveGame
 } from '@/types/game';
 import { RateLimit } from './rateLimit';
+import { analyzeChampionPerformance } from './performanceAnalyzer';
 
 interface RequestOptions {
   method?: string;
@@ -127,6 +128,9 @@ export const getMatchDetails = async (matchId: string, region: string): Promise<
     throw err;
   }
 };
+
+// Re-export functions from performanceAnalyzer
+export { analyzeChampionPerformance };
 
 // Alias exports
 export { getParticipantMatchHistory as getMatchIds };
