@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { LiveGame, LiveGameAnalysis, ChampionPerformance } from '@/types/game';
 import { ParticipantCard } from './ParticipantCard';
-import { analyzeLiveGame } from '@/lib/riotApiClient';
+import { analyzeLiveGame } from '@/lib/performanceAnalyzer';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";

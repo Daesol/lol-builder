@@ -32,13 +32,22 @@ export const ParticipantCard: React.FC<ParticipantCardProps> = ({
           region: region
         })
       );
-
-      const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch performance data');
+      if (response.status === 504) {
+        throw new Error('Request timeout - API rate limit reached. Please try again later.');
       }
 
+      if (!response.ok) {
+        const text = await response.text();
+        try {
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.error || 'Failed to fetch performance data');
+        } catch (parseError) {
+          throw new Error(`API Error: ${text.slice(0, 100)}`);
+        }
+      }
+
+      const data = await response.json();
       setPerformanceData(data);
 
       const entries = Object.entries(data.commonItems) as [string, ItemStats][];
