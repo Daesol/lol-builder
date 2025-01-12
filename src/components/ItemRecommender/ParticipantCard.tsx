@@ -1,15 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { LiveGameParticipant } from '@/types/game';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ItemSlots } from '@/components/ItemRecommender/ItemSlots';
 import type { 
   ParticipantCardProps, 
-  ChampionPerformance, 
-  MatchStats,
+  ChampionPerformance,
   ItemStats
 } from './types';
 
