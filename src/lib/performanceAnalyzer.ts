@@ -60,8 +60,8 @@ import {
           ].filter((item): item is number => item !== undefined && item !== 0),
           damageDealt: participant.totalDamageDealtToChampions || 0,
           goldEarned: participant.goldEarned || 0,
-          role: participant.teamPosition || '',
-          lane: participant.teamPosition || ''
+          role: participant.role || '',
+          lane: participant.lane || ''
         };
       })
       .filter((match): match is NonNullable<typeof match> => match !== null);
@@ -163,4 +163,3 @@ import {
       participants: participantAnalyses
     };
   };
-  
