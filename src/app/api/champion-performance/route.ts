@@ -8,14 +8,8 @@ export async function GET(request: Request) {
     const puuid = searchParams.get('puuid');
     const championId = searchParams.get('championId');
     const region = searchParams.get('region') || 'NA1';
-    const summonerId = searchParams.get('summonerId');
 
-    console.log('Champion Performance API called:', {
-      puuid,
-      championId,
-      region,
-      summonerId
-    });
+    console.log('Analyzing champion performance:', { puuid, championId, region });
 
     if (!puuid || !championId) {
       return NextResponse.json(
@@ -25,27 +19,24 @@ export async function GET(request: Request) {
     }
 
     try {
-      // For both live game and last match analysis
-      console.log('Starting champion analysis...');
       const analysis = await analyzeChampionPerformance(
         puuid,
         region,
         parseInt(championId, 10)
       );
-      console.log('Analysis completed:', analysis);
 
       return NextResponse.json(analysis);
-    } catch (err) {
-      console.error('Analysis error:', err);
+    } catch (error) {
+      console.error('Analysis error:', error);
       return NextResponse.json(
-        { error: err instanceof Error ? err.message : 'Analysis failed' },
+        { error: 'Failed to analyze champion performance' },
         { status: 500 }
       );
     }
   } catch (error) {
     console.error('Route error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Route failed' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

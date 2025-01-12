@@ -1,11 +1,10 @@
-// src/app/api/live-game/route.ts
+// app/api/live-game/route.ts
 import { NextResponse } from 'next/server';
 import {
   getAccountData,
   getSummonerData,
   getLiveGameData,
-  getMatchIds,
-  getMatchDetails
+  analyzeChampionPerformance
 } from '@/lib/riotApiClient';
 
 export async function GET(request: Request) {
@@ -16,43 +15,65 @@ export async function GET(request: Request) {
     const platform = (searchParams.get('region') || 'NA1').toUpperCase();
 
     if (!summonerName) {
-      return NextResponse.json(
-        { error: 'Summoner name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Summoner name is required' }, { status: 400 });
     }
 
-    // 1. Get Account Info
+    // Get Account Info
     const accountData = await getAccountData(summonerName, tagLine);
-    console.log('Account data fetched:', accountData);
+    console.log('Account data:', accountData);
 
-    // 2. Get Summoner Data
+    // Get Summoner Data
     const summonerData = await getSummonerData(accountData.puuid, platform);
-    console.log('Summoner data fetched:', summonerData);
+    console.log('Summoner data:', summonerData);
 
-    // 3. Try to get live game data
-    const liveGameData = await getLiveGameData(accountData.puuid, platform).catch(() => null);
+    // Get live game data
+    const liveGameData = await getLiveGameData(summonerData.id, platform);
+    console.log('Live game data:', liveGameData);
 
-    // 4. If not in game, get latest match
-    let lastMatch = null;
-    if (!liveGameData) {
-      try {
-        const matchIds = await getMatchIds(accountData.puuid, platform);
-        if (matchIds && matchIds.length > 0) {
-          lastMatch = await getMatchDetails(matchIds[0], platform);
-          console.log('Last match data fetched:', lastMatch);
-        }
-      } catch (matchError) {
-        console.error('Error fetching match data:', matchError);
-      }
+    if (liveGameData) {
+      // Analyze all participants in parallel
+      const participantAnalyses = await Promise.allSettled(
+        liveGameData.participants.map(async (participant: { summonerId: string; championId: number; summonerName: any; }) => {
+          try {
+            const analysis = await analyzeChampionPerformance(
+              participant.summonerId,
+              platform,
+              participant.championId
+            );
+            return {
+              summonerId: participant.summonerId,
+              analysis
+            };
+          } catch (error) {
+            console.error(`Error analyzing participant ${participant.summonerName}:`, error);
+            return {
+              summonerId: participant.summonerId,
+              analysis: null
+            };
+          }
+        })
+      );
+
+      // Add analyses to live game data
+      const analyzedParticipants = liveGameData.participants.map((participant: { summonerId: any; }) => {
+        const analysis = participantAnalyses.find(
+          pa => pa.status === 'fulfilled' && 
+          pa.value?.summonerId === participant.summonerId
+        );
+        return {
+          ...participant,
+          analysis: analysis?.status === 'fulfilled' ? analysis.value.analysis : null
+        };
+      });
+
+      liveGameData.participants = analyzedParticipants;
     }
 
     return NextResponse.json({
       account: accountData,
       summoner: summonerData,
       liveGame: liveGameData,
-      lastMatch: lastMatch,
-      message: liveGameData ? 'Player is in game' : 'Showing last match data'
+      message: liveGameData ? 'Player is in game' : 'Player is not in game'
     });
 
   } catch (error) {
