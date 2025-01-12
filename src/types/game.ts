@@ -70,6 +70,9 @@ export interface Account {
   }
   
   export interface MatchParticipant {
+    lane: string;
+    role: string;
+    teamPosition: string;
     puuid: string;
     summonerName: string;
     championId: number;
