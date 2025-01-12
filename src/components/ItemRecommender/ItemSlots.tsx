@@ -64,12 +64,12 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-3 gap-1">
+    <div className="flex space-x-1">
       {slots.map((itemId, idx) => (
         <div
           key={idx}
-          className={`relative w-8 h-8 rounded ${
-            !itemId || loading ? 'bg-gray-800 border border-gray-700' : ''
+          className={`relative w-6 h-6 rounded-md ${
+            !itemId || loading ? 'bg-slate-900 border border-slate-700' : ''
           }`}
           title={itemId && tooltips[itemId] 
             ? `${tooltips[itemId].name}${tooltipSuffix(itemId)}`
@@ -77,19 +77,19 @@ export const ItemSlots: React.FC<ItemSlotsProps> = ({
           }
         >
           {itemId && itemUrls[itemId] && !imageErrors[itemId] ? (
-            <div className="relative w-8 h-8">
+            <div className="relative w-6 h-6">
               <Image
                 src={itemUrls[itemId]}
                 alt={tooltips[itemId]?.name || `Item ${itemId}`}
-                width={32}
-                height={32}
-                className="rounded object-cover"
+                width={24}
+                height={24}
+                className="rounded-md object-cover"
                 onError={() => handleImageError(itemId)}
                 unoptimized
               />
             </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+            <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">
               {idx + 1}
             </div>
           )}
