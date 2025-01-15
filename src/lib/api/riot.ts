@@ -115,7 +115,7 @@ export class RiotAPI {
 
   async getSummonerByPUUID(puuid: string, region: string): Promise<Summoner> {
     // Summoner v4 API uses platform routing values
-    const url = `${this.baseUrls[region.toUpperCase()]}/lol/summoner/v4/summoners/by-puuid/${puuid}`;
+    const url = `${this.baseUrls[region.toUpperCase()]}/lol/summoner/v5/summoners/by-puuid/${puuid}`;
     const result = await this.fetch<Summoner>(url);
     if (!result) {
       throw new Error('Summoner not found');
@@ -126,7 +126,7 @@ export class RiotAPI {
   async getLiveGame(summonerId: string, region: string): Promise<LiveGame | null> {
     try {
       // Spectator v4 API uses platform routing values
-      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
+      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v5/active-games/by-summoner/${summonerId}`;
       const result = await this.fetch<LiveGame>(url);
       return result;
     } catch (error) {
