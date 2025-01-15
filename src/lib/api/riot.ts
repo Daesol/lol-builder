@@ -9,65 +9,23 @@ export class RiotAPI {
   private baseUrls: Record<string, string>;
   
   constructor() {
-    // Only initialize on server-side
-    if (typeof window === 'undefined') {
-      const apiKey = process.env.RIOT_API_KEY;
-      if (!apiKey) {
-        console.error('Environment variables:', {
-          RIOT_API_KEY: process.env.RIOT_API_KEY,
-          NODE_ENV: process.env.NODE_ENV,
-        });
-        throw new Error('RIOT_API_KEY is not set in environment variables');
-      }
-      this.apiKey = apiKey;
-    } else {
-      // Client-side: API calls should go through Next.js API routes
-      this.apiKey = '';
-    }
-    
+    this.apiKey = process.env.RIOT_API_KEY || '';
     this.baseUrls = {
       americas: 'https://americas.api.riotgames.com',
       asia: 'https://asia.api.riotgames.com',
-      europe: 'https://europe.api.riotgames.com',
-      NA1: 'https://na1.api.riotgames.com',
-      EUW1: 'https://euw1.api.riotgames.com',
-      KR: 'https://kr.api.riotgames.com'
+      europe: 'https://europe.api.riotgames.com'
     };
   }
 
-  private async fetch<T>(url: string): Promise<T | null> {
-    await rateLimit.wait();
-    
-    // Add API key as query parameter instead of header
-    const urlWithKey = `${url}${url.includes('?') ? '&' : '?'}api_key=${this.apiKey}`;
-    
-    console.log('Making API request to:', urlWithKey);
-    
-    const response = await fetch(urlWithKey, {
-      headers: {
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Charset': 'application/x-www-form-urlencoded; charset=UTF-8'
-      }
-    });
+  private async fetch<T>(url: string): Promise<T> {
+    if (!this.apiKey) {
+      throw new Error('Riot API key is not configured');
+    }
 
+    const response = await fetch(`${url}?api_key=${this.apiKey}`);
+    
     if (!response.ok) {
-      const errorBody = await response.text().catch(() => 'No error body');
-      console.error('API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: urlWithKey,
-        errorBody
-      });
-
-      if (response.status === 403) {
-        throw new Error('Invalid or expired API key');
-      }
-
-      if (response.status === 404) {
-        return null;
-      }
-
-      throw new Error(`API request failed: ${response.status}`);
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
@@ -112,14 +70,11 @@ export class RiotAPI {
 
   async getMatchHistory(puuid: string, region: string, count: number = 20): Promise<string[]> {
     try {
-      // Get the correct regional routing value
       const routingRegion = this.getRoutingValue(region);
+      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
       
-      // Use v5 endpoint with the correct regional routing
-      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`;
-      
-      const matchIds = await this.fetch<string[]>(url);
-      return matchIds || [];
+      // Add count parameter to the URL instead of query string
+      return this.fetch<string[]>(`${url}?count=${count}`);
     } catch (error) {
       console.error('Error fetching match history:', error);
       return [];
@@ -128,10 +83,7 @@ export class RiotAPI {
 
   async getMatch(matchId: string, region: string): Promise<Match | null> {
     try {
-      // Get the correct regional routing value
       const routingRegion = this.getRoutingValue(region);
-      
-      // Use v5 endpoint
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
       return this.fetch<Match>(url);
     } catch (error) {
@@ -140,7 +92,6 @@ export class RiotAPI {
     }
   }
 
-  // Helper method to get the correct routing value
   private getRoutingValue(region: string): string {
     switch (region.toUpperCase()) {
       case 'NA1':
