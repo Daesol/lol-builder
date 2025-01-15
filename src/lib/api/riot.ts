@@ -9,19 +9,24 @@ export class RiotAPI {
   constructor() {
     this.apiKey = process.env.RIOT_API_KEY || '';
     this.baseUrls = {
-      americas: 'https://americas.api.riotgames.com',
-      asia: 'https://asia.api.riotgames.com',
-      europe: 'https://europe.api.riotgames.com',
-      NA1: 'https://na1.api.riotgames.com',
+      // Platform routing values (regional APIs)
       BR1: 'https://br1.api.riotgames.com',
+      EUN1: 'https://eun1.api.riotgames.com',
+      EUW1: 'https://euw1.api.riotgames.com',
+      JP1: 'https://jp1.api.riotgames.com',
+      KR: 'https://kr.api.riotgames.com',
       LA1: 'https://la1.api.riotgames.com',
       LA2: 'https://la2.api.riotgames.com',
-      KR: 'https://kr.api.riotgames.com',
-      JP1: 'https://jp1.api.riotgames.com',
-      EUW1: 'https://euw1.api.riotgames.com',
-      EUN1: 'https://eun1.api.riotgames.com',
+      NA1: 'https://na1.api.riotgames.com',
+      OC1: 'https://oc1.api.riotgames.com',
       TR1: 'https://tr1.api.riotgames.com',
-      RU: 'https://ru.api.riotgames.com'
+      RU: 'https://ru.api.riotgames.com',
+      
+      // Regional routing values
+      AMERICAS: 'https://americas.api.riotgames.com',
+      ASIA: 'https://asia.api.riotgames.com',
+      EUROPE: 'https://europe.api.riotgames.com',
+      SEA: 'https://sea.api.riotgames.com'
     };
   }
 
@@ -41,7 +46,8 @@ export class RiotAPI {
   }
 
   async getAccountData(gameName: string, tagLine: string): Promise<Account> {
-    const url = `${this.baseUrls.americas}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
+    // Account v1 API uses AMERICAS for all regions
+    const url = `${this.baseUrls.AMERICAS}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
     const result = await this.fetch<Account>(url);
     if (!result) {
       throw new Error('Account not found');
@@ -50,6 +56,7 @@ export class RiotAPI {
   }
 
   async getSummonerByPUUID(puuid: string, region: string): Promise<Summoner> {
+    // Summoner v4 API uses platform routing values
     const url = `${this.baseUrls[region.toUpperCase()]}/lol/summoner/v4/summoners/by-puuid/${puuid}`;
     const result = await this.fetch<Summoner>(url);
     if (!result) {
@@ -60,11 +67,11 @@ export class RiotAPI {
 
   async getLiveGame(summonerId: string, region: string): Promise<LiveGame | null> {
     try {
+      // Spectator v4 API uses platform routing values
       const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
       const result = await this.fetch<LiveGame>(url);
       return result;
     } catch (error) {
-      // 404 means player not in game (expected)
       if (error instanceof Error && error.message.includes('404')) {
         return null;
       }
@@ -74,9 +81,10 @@ export class RiotAPI {
 
   async getMatchHistory(puuid: string, region: string, count: number = 3): Promise<string[]> {
     try {
+      // Match v5 API uses regional routing values
       const routingRegion = this.getRoutingValue(region);
-      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`;
-      return this.fetch<string[]>(url);
+      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
+      return this.fetch<string[]>(`${url}?count=${count}`);
     } catch (error) {
       console.error('Error fetching match history:', error);
       return [];
@@ -85,6 +93,7 @@ export class RiotAPI {
 
   async getMatch(matchId: string, region: string): Promise<Match | null> {
     try {
+      // Match v5 API uses regional routing values
       const routingRegion = this.getRoutingValue(region);
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
       return this.fetch<Match>(url);
@@ -95,22 +104,24 @@ export class RiotAPI {
   }
 
   private getRoutingValue(region: string): string {
+    // Updated regional routing mapping
     switch (region.toUpperCase()) {
       case 'NA1':
       case 'BR1':
       case 'LA1':
       case 'LA2':
-        return 'americas';
+      case 'OC1':
+        return 'AMERICAS';
       case 'KR':
       case 'JP1':
-        return 'asia';
+        return 'ASIA';
       case 'EUW1':
       case 'EUN1':
       case 'TR1':
       case 'RU':
-        return 'europe';
+        return 'EUROPE';
       default:
-        return 'americas';
+        return 'AMERICAS';
     }
   }
 }
