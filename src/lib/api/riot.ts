@@ -9,8 +9,9 @@ export class RiotAPI {
   private baseUrls: Record<string, string>;
   
   constructor() {
-    const apiKey = process.env.RIOT_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_RIOT_API_KEY || process.env.RIOT_API_KEY;
     if (!apiKey) {
+      console.error('Available env vars:', process.env); // Temporary debug
       throw new Error('RIOT_API_KEY is not set in environment variables');
     }
     this.apiKey = apiKey;
