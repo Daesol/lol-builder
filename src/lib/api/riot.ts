@@ -114,21 +114,35 @@ export class RiotAPI {
   }
 
   async getSummonerByPUUID(puuid: string, region: string): Promise<Summoner> {
-    // Summoner v4 API uses platform routing values
-    const url = `${this.baseUrls[region.toUpperCase()]}/lol/summoner/v5/summoners/by-puuid/${puuid}`;
-    const result = await this.fetch<Summoner>(url);
-    if (!result) {
-      throw new Error('Summoner not found');
+    try {
+      // Changed from v5 back to v4 for summoner API
+      const url = `${this.baseUrls[region.toUpperCase()]}/lol/summoner/v4/summoners/by-puuid/${puuid}`;
+      console.log('Summoner API Request:', {
+        endpoint: 'summoner-v4',
+        region: region.toUpperCase(),
+        url: url.split('?')[0]
+      });
+      const result = await this.fetch<Summoner>(url);
+      if (!result) {
+        throw new Error('Summoner not found');
+      }
+      return result;
+    } catch (error) {
+      console.error('Error in getSummonerByPUUID:', error);
+      throw error;
     }
-    return result;
   }
 
   async getLiveGame(summonerId: string, region: string): Promise<LiveGame | null> {
     try {
-      // Spectator v4 API uses platform routing values
+      // Updated to v5 for spectator API
       const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v5/active-games/by-summoner/${summonerId}`;
-      const result = await this.fetch<LiveGame>(url);
-      return result;
+      console.log('Spectator API Request:', {
+        endpoint: 'spectator-v5',
+        region: region.toUpperCase(),
+        url: url.split('?')[0]
+      });
+      return await this.fetch<LiveGame>(url);
     } catch (error) {
       if (error instanceof Error) {
         // 404 means player not in game (expected)
@@ -138,8 +152,7 @@ export class RiotAPI {
         // 403 means API key permissions issue
         if (error.message.includes('403')) {
           console.error('Spectator API access denied - check API key permissions');
-          console.log('Note: Spectator API requires a development key or production key with proper permissions');
-          return null; // Return null instead of throwing to allow the app to continue
+          return null;
         }
       }
       throw error;
@@ -149,6 +162,7 @@ export class RiotAPI {
   async getMatchHistory(puuid: string, region: string, count: number = 3): Promise<string[]> {
     try {
       const routingRegion = this.getRoutingValue(region);
+      // Match API is v5
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
       return await this.fetch<string[]>(url, { count: count.toString() }) || [];
     } catch (error) {
@@ -165,6 +179,7 @@ export class RiotAPI {
   async getMatch(matchId: string, region: string): Promise<Match | null> {
     try {
       const routingRegion = this.getRoutingValue(region);
+      // Match API is v5
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
       return await this.fetch<Match>(url);
     } catch (error) {
