@@ -1,18 +1,23 @@
 import { riotApi } from '@/lib/api/riot';
 import type { ChampionPerformance, LiveGame, LiveGameAnalysis } from '@/types/game';
+import { rateLimit } from '@/lib/utils/cache';
 
 export const analyzeChampionPerformance = async (
   puuid: string,
   region: string,
   championId: number
 ): Promise<ChampionPerformance> => {
-  // Get match IDs first
-  const matchIds = await riotApi.getMatchHistory(puuid, region, 20);
+  // Get match IDs first (limit to 3)
+  const matchIds = await riotApi.getMatchHistory(puuid, region, 3);
   
-  // Fetch full match data for each ID
-  const matchPromises = matchIds.map(matchId => riotApi.getMatch(matchId, region));
-  const matches = await Promise.all(matchPromises);
-  
+  // Fetch full match data for each ID with rate limiting
+  const matches = [];
+  for (const matchId of matchIds) {
+    await rateLimit.waitForAvailability();
+    const match = await riotApi.getMatch(matchId, region);
+    if (match) matches.push(match);
+  }
+
   // Initialize performance stats
   const performance: ChampionPerformance = {
     championId,
@@ -92,53 +97,55 @@ export const analyzeChampionPerformance = async (
 };
 
 export const analyzeLiveGame = async (
-    game: LiveGame,
-    region: string
-  ): Promise<LiveGameAnalysis> => {
-    const participantAnalyses = await Promise.all(
-      game.participants.map(async participant => {
-        try {
-          const analysis = await analyzeChampionPerformance(
-            participant.puuid,
-            region,
-            participant.championId
-          );
+  game: LiveGame,
+  region: string
+): Promise<LiveGameAnalysis> => {
+  // Process participants in batches to respect rate limits
+  const participantAnalyses = [];
   
-          return {
-            summonerId: participant.summonerId,
-            summonerName: participant.summonerName,
-            championId: participant.championId,
-            teamId: participant.teamId,
-            championAnalysis: analysis
-          };
-        } catch (error) {
-          console.error(`Error analyzing participant ${participant.summonerName}:`, error);
-          return {
-            summonerId: participant.summonerId,
-            summonerName: participant.summonerName,
-            championId: participant.championId,
-            teamId: participant.teamId,
-            championAnalysis: {
-              championId: participant.championId,
-              matchCount: 0,
-              wins: 0,
-              totalKills: 0,
-              totalDeaths: 0,
-              totalAssists: 0,
-              totalDamageDealt: 0,
-              totalGoldEarned: 0,
-              matches: [],
-              commonItems: {}
-            }
-          };
+  for (const participant of game.participants) {
+    await rateLimit.waitForAvailability();
+    try {
+      const analysis = await analyzeChampionPerformance(
+        participant.puuid,
+        region,
+        participant.championId
+      );
+
+      participantAnalyses.push({
+        summonerId: participant.summonerId,
+        summonerName: participant.summonerName,
+        championId: participant.championId,
+        teamId: participant.teamId,
+        championAnalysis: analysis
+      });
+    } catch (error) {
+      console.error(`Error analyzing participant ${participant.summonerName}:`, error);
+      participantAnalyses.push({
+        summonerId: participant.summonerId,
+        summonerName: participant.summonerName,
+        championId: participant.championId,
+        teamId: participant.teamId,
+        championAnalysis: {
+          championId: participant.championId,
+          matchCount: 0,
+          wins: 0,
+          totalKills: 0,
+          totalDeaths: 0,
+          totalAssists: 0,
+          totalDamageDealt: 0,
+          totalGoldEarned: 0,
+          matches: [],
+          commonItems: {}
         }
-      })
-    );
-  
-    return {
-      timestamp: Date.now(),
-      gameId: game.gameId,
-      gameMode: game.gameMode,
-      participants: participantAnalyses
-    };
+      });
+    }
+  }
+
+  return {
+    timestamp: Date.now(),
+    gameId: game.gameId,
+    gameMode: game.gameMode,
+    participants: participantAnalyses
   };
+};

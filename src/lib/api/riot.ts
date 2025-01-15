@@ -22,6 +22,7 @@ export class RiotAPI {
       throw new Error('Riot API key is not configured');
     }
 
+    await rateLimit.waitForAvailability();
     const response = await fetch(`${url}?api_key=${this.apiKey}`);
     
     if (!response.ok) {
@@ -68,13 +69,11 @@ export class RiotAPI {
     }
   }
 
-  async getMatchHistory(puuid: string, region: string, count: number = 20): Promise<string[]> {
+  async getMatchHistory(puuid: string, region: string, count: number = 3): Promise<string[]> {
     try {
       const routingRegion = this.getRoutingValue(region);
-      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
-      
-      // Add count parameter to the URL instead of query string
-      return this.fetch<string[]>(`${url}?count=${count}`);
+      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`;
+      return this.fetch<string[]>(url);
     } catch (error) {
       console.error('Error fetching match history:', error);
       return [];

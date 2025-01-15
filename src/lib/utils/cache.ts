@@ -1,24 +1,32 @@
 export class RateLimit {
-  private requests: number[] = [];
-  private limit: number;
-  private interval: number;
+  private timestamps: number[] = [];
+  private readonly shortTermLimit = 20; // requests
+  private readonly shortTermWindow = 1000; // 1 second in ms
+  private readonly longTermLimit = 100; // requests
+  private readonly longTermWindow = 120000; // 2 minutes in ms
 
-  constructor(limit = 20, interval = 1000) {
-    this.limit = limit;
-    this.interval = interval;
-  }
-
-  async wait(): Promise<void> {
+  async waitForAvailability(): Promise<void> {
     const now = Date.now();
-    this.requests = this.requests.filter(time => now - time < this.interval);
-    
-    if (this.requests.length >= this.limit) {
-      const oldestRequest = this.requests[0];
-      const waitTime = this.interval - (now - oldestRequest);
+    this.timestamps = this.timestamps.filter(
+      time => now - time < this.longTermWindow
+    );
+
+    if (this.timestamps.length >= this.longTermLimit) {
+      const oldestTimestamp = this.timestamps[0];
+      const waitTime = this.longTermWindow - (now - oldestTimestamp);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
-    
-    this.requests.push(now);
+
+    const recentTimestamps = this.timestamps.filter(
+      time => now - time < this.shortTermWindow
+    );
+    if (recentTimestamps.length >= this.shortTermLimit) {
+      const oldestRecentTimestamp = recentTimestamps[0];
+      const waitTime = this.shortTermWindow - (now - oldestRecentTimestamp);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+
+    this.timestamps.push(now);
   }
 }
 
