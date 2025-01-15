@@ -42,6 +42,7 @@ export async function GET(request: Request) {
         : null;
 
       const response: ApiResponse = {
+        account,
         summoner: summonerData,
         liveGame,
         lastMatch,
