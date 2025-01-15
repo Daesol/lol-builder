@@ -133,10 +133,10 @@ export class RiotAPI {
     }
   }
 
-  async getLiveGame(summonerId: string, region: string): Promise<LiveGame | null> {
+  async getLiveGame(puuid: string, region: string): Promise<LiveGame | null> {
     try {
       // Spectator v5 uses PUUID instead of summoner ID
-      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v5/active-games/by-puuid/${summonerId}`;
+      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v5/active-games/by-summoner/${puuid}`;
       console.log('Spectator API Request:', {
         endpoint: 'spectator-v5',
         region: region.toUpperCase(),
