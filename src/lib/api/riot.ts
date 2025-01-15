@@ -38,12 +38,13 @@ export class RiotAPI {
   private async fetch<T>(url: string): Promise<T | null> {
     await rateLimit.wait();
     
-    console.log('Making API request to:', url);
-    console.log('Using API key:', this.apiKey.substring(0, 8) + '...');
+    // Add API key as query parameter instead of header
+    const urlWithKey = `${url}${url.includes('?') ? '&' : '?'}api_key=${this.apiKey}`;
     
-    const response = await fetch(url, {
+    console.log('Making API request to:', urlWithKey);
+    
+    const response = await fetch(urlWithKey, {
       headers: {
-        'X-Riot-Token': this.apiKey,
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Charset': 'application/x-www-form-urlencoded; charset=UTF-8'
       }
@@ -54,19 +55,19 @@ export class RiotAPI {
       console.error('API Error:', {
         status: response.status,
         statusText: response.statusText,
-        url: url,
+        url: urlWithKey,
         errorBody
       });
 
       if (response.status === 403) {
-        throw new Error('Invalid or expired API key. Please check your RIOT_API_KEY environment variable.');
+        throw new Error('Invalid or expired API key');
       }
 
       if (response.status === 404) {
         return null;
       }
 
-      throw new Error(`API request failed: ${response.status} - ${response.statusText}`);
+      throw new Error(`API request failed: ${response.status}`);
     }
 
     return response.json();
