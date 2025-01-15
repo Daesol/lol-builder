@@ -8,6 +8,18 @@ export class RiotAPI {
   
   constructor() {
     this.apiKey = process.env.RIOT_API_KEY || '';
+    
+    // Enhanced API key validation
+    if (!this.apiKey.startsWith('RGAPI-')) {
+      console.error('Invalid API key format. Key should start with RGAPI-');
+    } else {
+      console.log('API Key validation:', {
+        format: 'Valid (RGAPI- prefix)',
+        length: this.apiKey.length,
+        lastUpdated: new Date().toISOString()
+      });
+    }
+    
     this.baseUrls = {
       // Platform routing values (regional APIs)
       BR1: 'https://br1.api.riotgames.com',
@@ -30,44 +42,56 @@ export class RiotAPI {
     };
   }
 
-  private async fetch<T>(url: string): Promise<T> {
+  private async fetch<T>(url: string, params: Record<string, string> = {}): Promise<T> {
     if (!this.apiKey) {
       throw new Error('Riot API key is not configured');
     }
 
     await rateLimit.waitForAvailability();
     
-    // Log the full URL for debugging (without API key)
-    console.log('Making Riot API request to:', url);
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      ...params,
+      api_key: this.apiKey
+    });
     
-    const response = await fetch(`${url}?api_key=${this.apiKey}`);
+    // Construct full URL
+    const fullUrl = `${url}${url.includes('?') ? '&' : '?'}${queryParams.toString()}`;
+    
+    // Log request details (without API key)
+    console.log('API Request:', {
+      url: url.split('?')[0],
+      method: 'GET',
+      params: Object.keys(params),
+      timestamp: new Date().toISOString()
+    });
+    
+    const response = await fetch(fullUrl);
     
     if (!response.ok) {
       const errorText = await response.text();
+      const endpoint = url.split('/').slice(3).join('/');
       
-      // Check for rate limit errors
-      if (response.status === 429) {
-        const retryAfter = response.headers.get('Retry-After');
-        console.error('Rate limit exceeded:', {
-          retryAfter,
-          method: 'GET',
-          url: url.split('?')[0], // Log URL without API key
-          rateLimitType: response.headers.get('X-Rate-Limit-Type'),
-          error: errorText
-        });
-        throw new Error(`Rate limit exceeded. Retry after ${retryAfter} seconds`);
-      }
-      
-      // Log other errors
-      console.error('Riot API Error:', {
+      // Enhanced error logging
+      console.error('API Error Details:', {
+        endpoint,
         status: response.status,
         statusText: response.statusText,
-        url: url.split('?')[0],
         error: errorText,
-        headers: Object.fromEntries(response.headers.entries())
+        headers: Object.fromEntries(response.headers.entries()),
+        timestamp: new Date().toISOString()
       });
-      
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+
+      switch (response.status) {
+        case 401:
+          throw new Error(`Authentication failed for endpoint: ${endpoint}`);
+        case 403:
+          throw new Error(`Access forbidden for endpoint: ${endpoint} - Check API permissions`);
+        case 404:
+          return null as T;
+        default:
+          throw new Error(`API request failed (${response.status}): ${errorText}`);
+      }
     }
 
     return response.json();
@@ -124,24 +148,32 @@ export class RiotAPI {
 
   async getMatchHistory(puuid: string, region: string, count: number = 3): Promise<string[]> {
     try {
-      // Match v5 API uses regional routing values
       const routingRegion = this.getRoutingValue(region);
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
-      return this.fetch<string[]>(`${url}?count=${count}`);
+      return await this.fetch<string[]>(url, { count: count.toString() }) || [];
     } catch (error) {
-      console.error('Error fetching match history:', error);
+      console.error('Match History Error:', {
+        error,
+        puuid: puuid.substring(0, 8) + '...',
+        region,
+        timestamp: new Date().toISOString()
+      });
       return [];
     }
   }
 
   async getMatch(matchId: string, region: string): Promise<Match | null> {
     try {
-      // Match v5 API uses regional routing values
       const routingRegion = this.getRoutingValue(region);
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
-      return this.fetch<Match>(url);
+      return await this.fetch<Match>(url);
     } catch (error) {
-      console.error('Error fetching match:', error);
+      console.error('Match Details Error:', {
+        error,
+        matchId,
+        region,
+        timestamp: new Date().toISOString()
+      });
       return null;
     }
   }

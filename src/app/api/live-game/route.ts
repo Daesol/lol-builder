@@ -10,6 +10,19 @@ export async function GET(request: Request) {
     const tagLine = searchParams.get('tagLine');
     const region = searchParams.get('region') || 'NA1';
 
+    // Validate API key format
+    if (!process.env.RIOT_API_KEY?.startsWith('RGAPI-')) {
+      console.error('Invalid API key format:', {
+        hasKey: !!process.env.RIOT_API_KEY,
+        keyLength: process.env.RIOT_API_KEY?.length,
+        keyPrefix: process.env.RIOT_API_KEY?.substring(0, 7)
+      });
+      return NextResponse.json(
+        { error: 'Invalid API key configuration' },
+        { status: 500 }
+      );
+    }
+
     console.log('API Route - Received request:', { 
       summoner, 
       tagLine, 
@@ -65,9 +78,10 @@ export async function GET(request: Request) {
     }
   } catch (error) {
     console.error('API Route - Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: error instanceof Error && error.message.includes('401') ? 401 : 500 }
     );
   }
 }
