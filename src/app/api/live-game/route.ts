@@ -1,64 +1,64 @@
 // src/app/api/live-game/route.ts
 import { NextResponse } from 'next/server';
-import {
-  getAccountData,
-  getSummonerData,
-  getLiveGameData,
-  getMatchIds,
-  getMatchDetails
-} from '@/lib/riotApiClient';
+import { riotApi } from '@/lib/api/riot';
+import type { ApiResponse } from '@/types/game';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const summonerName = searchParams.get('summoner');
-    const tagLine = searchParams.get('tagLine') || 'NA1';
-    const platform = (searchParams.get('region') || 'NA1').toUpperCase();
+    const summoner = searchParams.get('summoner');
+    const tagLine = searchParams.get('tagLine');
+    const region = searchParams.get('region') || 'NA1';
 
-    if (!summonerName) {
+    if (!summoner || !tagLine) {
       return NextResponse.json(
-        { error: 'Summoner name is required' },
+        { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
 
-    // 1. Get Account Info
-    const accountData = await getAccountData(summonerName, tagLine);
-    console.log('Account data fetched:', accountData);
+    // Get account data
+    const account = await riotApi.getAccountData(summoner, tagLine);
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Summoner not found' },
+        { status: 404 }
+      );
+    }
 
-    // 2. Get Summoner Data
-    const summonerData = await getSummonerData(accountData.puuid, platform);
-    console.log('Summoner data fetched:', summonerData);
+    // Get summoner data
+    const summonerData = await riotApi.getSummonerByPUUID(account.puuid, region);
+    if (!summonerData) {
+      return NextResponse.json(
+        { error: 'Summoner data not found' },
+        { status: 404 }
+      );
+    }
 
-    // 3. Try to get live game data
-    const liveGameData = await getLiveGameData(accountData.puuid, platform).catch(() => null);
+    // Get live game data
+    const liveGame = await riotApi.getLiveGame(summonerData.id, region);
 
-    // 4. If not in game, get latest match
+    // Get last match if not in game
     let lastMatch = null;
-    if (!liveGameData) {
-      try {
-        const matchIds = await getMatchIds(accountData.puuid, platform);
-        if (matchIds && matchIds.length > 0) {
-          lastMatch = await getMatchDetails(matchIds[0], platform);
-          console.log('Last match data fetched:', lastMatch);
-        }
-      } catch (matchError) {
-        console.error('Error fetching match data:', matchError);
+    if (!liveGame) {
+      const matches = await riotApi.getMatchHistory(account.puuid, region, 1);
+      if (matches.length > 0) {
+        lastMatch = matches[0];
       }
     }
 
-    return NextResponse.json({
-      account: accountData,
+    const response: ApiResponse = {
+      account,
       summoner: summonerData,
-      liveGame: liveGameData,
-      lastMatch: lastMatch,
-      message: liveGameData ? 'Player is in game' : 'Showing last match data'
-    });
+      liveGame,
+      lastMatch
+    };
 
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Live game API error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch game data' },
       { status: 500 }
     );
   }

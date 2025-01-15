@@ -1,6 +1,6 @@
-// app/api/champion-performance/route.ts
 import { NextResponse } from 'next/server';
-import { analyzeChampionPerformance } from '@/lib/riotApiClient';
+import { riotApi } from '@/lib/api/riot';
+import { analyzeChampionPerformance } from '@/lib/utils/analysis';
 
 export async function GET(request: Request) {
   try {
@@ -24,10 +24,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json(analysis);
   } catch (error) {
-    console.error('Error in champion performance analysis:', error);
+    console.error('Champion analysis error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Analysis failed' },
       { status: 500 }
     );
   }
-}
+} 
