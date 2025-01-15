@@ -135,8 +135,8 @@ export class RiotAPI {
 
   async getLiveGame(summonerId: string, region: string): Promise<LiveGame | null> {
     try {
-      // Updated to v5 for spectator API
-      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v5/active-games/by-summoner/${summonerId}`;
+      // Spectator v5 uses PUUID instead of summoner ID
+      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v5/active-games/by-puuid/${summonerId}`;
       console.log('Spectator API Request:', {
         endpoint: 'spectator-v5',
         region: region.toUpperCase(),
@@ -152,6 +152,11 @@ export class RiotAPI {
         // 403 means API key permissions issue
         if (error.message.includes('403')) {
           console.error('Spectator API access denied - check API key permissions');
+          return null;
+        }
+        // 400 means wrong parameter type
+        if (error.message.includes('400')) {
+          console.error('Invalid parameter type for Spectator API');
           return null;
         }
       }

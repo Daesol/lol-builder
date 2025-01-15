@@ -47,8 +47,8 @@ export async function GET(request: Request) {
       const summonerData = await riotApi.getSummonerByPUUID(account.puuid, region);
       console.log('API Route - Summoner data:', summonerData);
       
-      // Get live game data using summonerId
-      const liveGame = await riotApi.getLiveGame(summonerData.id, region);
+      // Get live game data using PUUID instead of summoner ID
+      const liveGame = await riotApi.getLiveGame(account.puuid, region);
       console.log('API Route - Live game data:', liveGame);
 
       // Initialize response with required fields
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
         account,
         summoner: summonerData,
         liveGame: liveGame,
-        lastMatch: null, // Initialize with null
+        lastMatch: null,
         region
       };
 
@@ -78,10 +78,9 @@ export async function GET(request: Request) {
     }
   } catch (error) {
     console.error('API Route - Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: errorMessage },
-      { status: error instanceof Error && error.message.includes('401') ? 401 : 500 }
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }
