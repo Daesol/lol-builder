@@ -13,11 +13,16 @@ export class RiotAPI {
     if (typeof window === 'undefined') {
       const apiKey = process.env.RIOT_API_KEY;
       if (!apiKey) {
+        console.error('Environment variables:', {
+          RIOT_API_KEY: process.env.RIOT_API_KEY,
+          NODE_ENV: process.env.NODE_ENV,
+        });
         throw new Error('RIOT_API_KEY is not set in environment variables');
       }
       this.apiKey = apiKey;
     } else {
-      this.apiKey = ''; // Empty string for client-side
+      // Client-side: API calls should go through Next.js API routes
+      this.apiKey = '';
     }
     
     this.baseUrls = {
