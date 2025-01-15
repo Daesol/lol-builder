@@ -17,19 +17,21 @@ export const GameAnalysis = () => {
     setError(null);
 
     try {
-      console.log('Searching for:', { summonerName, tagLine, region });
-      const response = await fetch(
-        `/api/live-game?${new URLSearchParams({
-          summoner: summonerName,
-          tagLine,
-          region
-        })}`
-      );
-
+      const url = `/api/live-game?${new URLSearchParams({
+        summoner: summonerName,
+        tagLine,
+        region
+      })}`;
+      
+      console.log('Making API request to:', url); // Debug log
+      
+      const response = await fetch(url);
       const result = await response.json();
 
+      console.log('API response:', result); // Debug log
+
       if (!response.ok) {
-        throw new Error(result.error || `Error: ${response.status}`);
+        throw new Error(result.error || 'Failed to fetch data');
       }
 
       setData(result);
