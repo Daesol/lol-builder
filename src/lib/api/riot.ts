@@ -11,7 +11,17 @@ export class RiotAPI {
     this.baseUrls = {
       americas: 'https://americas.api.riotgames.com',
       asia: 'https://asia.api.riotgames.com',
-      europe: 'https://europe.api.riotgames.com'
+      europe: 'https://europe.api.riotgames.com',
+      NA1: 'https://na1.api.riotgames.com',
+      BR1: 'https://br1.api.riotgames.com',
+      LA1: 'https://la1.api.riotgames.com',
+      LA2: 'https://la2.api.riotgames.com',
+      KR: 'https://kr.api.riotgames.com',
+      JP1: 'https://jp1.api.riotgames.com',
+      EUW1: 'https://euw1.api.riotgames.com',
+      EUN1: 'https://eun1.api.riotgames.com',
+      TR1: 'https://tr1.api.riotgames.com',
+      RU: 'https://ru.api.riotgames.com'
     };
   }
 
@@ -40,7 +50,7 @@ export class RiotAPI {
   }
 
   async getSummonerByPUUID(puuid: string, region: string): Promise<Summoner> {
-    const url = `${this.baseUrls[region]}/lol/summoner/v4/summoners/by-puuid/${puuid}`;
+    const url = `${this.baseUrls[region.toUpperCase()]}/lol/summoner/v4/summoners/by-puuid/${puuid}`;
     const result = await this.fetch<Summoner>(url);
     if (!result) {
       throw new Error('Summoner not found');
@@ -48,19 +58,14 @@ export class RiotAPI {
     return result;
   }
 
-  async getLiveGame(puuid: string, region: string): Promise<LiveGame | null> {
+  async getLiveGame(summonerId: string, region: string): Promise<LiveGame | null> {
     try {
-      const url = `${this.baseUrls[region]}/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
       const result = await this.fetch<LiveGame>(url);
       return result;
     } catch (error) {
       // 404 means player not in game (expected)
       if (error instanceof Error && error.message.includes('404')) {
-        return null;
-      }
-      // 403 means API key permissions issue
-      if (error instanceof Error && error.message.includes('403')) {
-        console.error('Spectator API access denied - check API key permissions');
         return null;
       }
       throw error;
