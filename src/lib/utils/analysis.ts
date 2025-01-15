@@ -13,62 +13,41 @@ export const analyzeChampionPerformance = async (
   const matchPromises = matchIds.map(matchId => riotApi.getMatch(matchId, region));
   const matches = await Promise.all(matchPromises);
   
-  // Filter matches for the specific champion
-  const championMatches = matches.filter(match => {
-    if (!match) return false;
-    const participant = match.info.participants.find(p => p.puuid === puuid);
-    return participant && participant.championId === championId;
-  });
-
   // Initialize performance stats
-  let totalKills = 0;
-  let totalDeaths = 0;
-  let totalAssists = 0;
-  let totalDamageDealt = 0;
-  let totalGoldEarned = 0;
-  let wins = 0;
-  const itemCounts: Record<number, number> = {};
+  const performance: ChampionPerformance = {
+    championId,
+    matchCount: 0,
+    wins: 0,
+    totalKills: 0,
+    totalDeaths: 0,
+    totalAssists: 0,
+    totalDamageDealt: 0,
+    totalGoldEarned: 0,
+    matches: [],
+    commonItems: {}
+  };
 
   // Process each match
-  const processedMatches = championMatches.map(match => {
-    if (!match) return null;
-    const participant = match.info.participants.find(p => p.puuid === puuid);
-    if (!participant) return null;
+  const processedMatches = matches
+    .filter((match): match is NonNullable<typeof match> => {
+      if (!match) return false;
+      const participant = match.info.participants.find(p => p.puuid === puuid);
+      return participant?.championId === championId;
+    })
+    .map(match => {
+      const participant = match.info.participants.find(p => p.puuid === puuid)!;
 
-    // Update totals
-    totalKills += participant.kills;
-    totalDeaths += participant.deaths;
-    totalAssists += participant.assists;
-    totalDamageDealt += participant.totalDamageDealtToChampions;
-    totalGoldEarned += participant.goldEarned;
-    if (participant.win) wins++;
+      // Update totals
+      performance.matchCount++;
+      performance.totalKills += participant.kills;
+      performance.totalDeaths += participant.deaths;
+      performance.totalAssists += participant.assists;
+      performance.totalDamageDealt += participant.totalDamageDealtToChampions;
+      performance.totalGoldEarned += participant.goldEarned;
+      if (participant.win) performance.wins++;
 
-    // Count items
-    [
-      participant.item0,
-      participant.item1,
-      participant.item2,
-      participant.item3,
-      participant.item4,
-      participant.item5,
-      participant.item6,
-    ].forEach(itemId => {
-      if (itemId > 0) {
-        itemCounts[itemId] = (itemCounts[itemId] || 0) + 1;
-      }
-    });
-
-    return {
-      matchId: match.metadata.matchId,
-      gameCreation: match.info.gameCreation,
-      gameDuration: match.info.gameDuration,
-      win: participant.win,
-      kills: participant.kills,
-      deaths: participant.deaths,
-      assists: participant.assists,
-      totalDamageDealt: participant.totalDamageDealtToChampions,
-      goldEarned: participant.goldEarned,
-      items: [
+      // Process items and track win rates
+      const items = [
         participant.item0,
         participant.item1,
         participant.item2,
@@ -76,30 +55,36 @@ export const analyzeChampionPerformance = async (
         participant.item4,
         participant.item5,
         participant.item6,
-      ].filter(id => id > 0)
-    };
-  }).filter((match): match is NonNullable<typeof match> => match !== null);
+      ].filter(id => id > 0);
 
-  // Sort items by frequency
-  const commonItems = Object.entries(itemCounts)
-    .sort(([, a], [, b]) => b - a)
-    .reduce((obj, [itemId, count]) => ({
-      ...obj,
-      [itemId]: count
-    }), {});
+      items.forEach(itemId => {
+        if (!performance.commonItems[itemId]) {
+          performance.commonItems[itemId] = { count: 0, winCount: 0 };
+        }
+        performance.commonItems[itemId].count++;
+        if (participant.win) {
+          performance.commonItems[itemId].winCount++;
+        }
+      });
 
-  return {
-    championId,
-    matchCount: processedMatches.length,
-    wins,
-    totalKills,
-    totalDeaths,
-    totalAssists,
-    totalDamageDealt,
-    totalGoldEarned,
-    matches: processedMatches,
-    commonItems
-  };
+      return {
+        matchId: match.metadata.matchId,
+        gameCreation: match.info.gameCreation,
+        gameDuration: match.info.gameDuration,
+        win: participant.win,
+        kills: participant.kills,
+        deaths: participant.deaths,
+        assists: participant.assists,
+        itemBuild: items,
+        damageDealt: participant.totalDamageDealtToChampions,
+        goldEarned: participant.goldEarned,
+        role: participant.role || participant.teamPosition || '',
+        lane: participant.lane || ''
+      };
+    });
+
+  performance.matches = processedMatches;
+  return performance;
 };
 
 export const analyzeLiveGame = async (
