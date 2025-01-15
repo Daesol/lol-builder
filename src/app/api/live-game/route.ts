@@ -1,7 +1,7 @@
 // src/app/api/live-game/route.ts
 import { NextResponse } from 'next/server';
 import { riotApi } from '@/lib/api/riot';
-import type { ApiResponse, Match } from '@/types/game';
+import type { ApiResponse } from '@/types/game';
 
 export async function GET(request: Request) {
   try {
