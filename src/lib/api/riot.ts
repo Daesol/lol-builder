@@ -110,30 +110,39 @@ export class RiotAPI {
     }
   }
 
-  async getMatchHistory(puuid: string, region: string, count: number = 20): Promise<Match[]> {
-    const platform = this.getPlatformFromRegion(region);
-    const url = `${this.baseUrls[platform]}/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`;
-    const matchIds = await this.fetch<string[]>(url);
-    if (!matchIds) {
+  async getMatchHistory(puuid: string, region: string, count: number = 20): Promise<string[]> {
+    try {
+      // Get the correct regional routing value
+      const routingRegion = this.getRoutingValue(region);
+      
+      // Use v5 endpoint with the correct regional routing
+      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`;
+      
+      const matchIds = await this.fetch<string[]>(url);
+      return matchIds || [];
+    } catch (error) {
+      console.error('Error fetching match history:', error);
       return [];
     }
-    
-    return Promise.all(
-      matchIds.map((matchId: string) => this.getMatch(matchId, platform))
-    );
   }
 
-  async getMatch(matchId: string, platform: string): Promise<Match> {
-    const url = `${this.baseUrls[platform]}/lol/match/v5/matches/${matchId}`;
-    const result = await this.fetch<Match>(url);
-    if (!result) {
-      throw new Error('Match not found');
+  async getMatch(matchId: string, region: string): Promise<Match | null> {
+    try {
+      // Get the correct regional routing value
+      const routingRegion = this.getRoutingValue(region);
+      
+      // Use v5 endpoint
+      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
+      return this.fetch<Match>(url);
+    } catch (error) {
+      console.error('Error fetching match:', error);
+      return null;
     }
-    return result;
   }
 
-  private getPlatformFromRegion(region: string): string {
-    switch (region) {
+  // Helper method to get the correct routing value
+  private getRoutingValue(region: string): string {
+    switch (region.toUpperCase()) {
       case 'NA1':
       case 'BR1':
       case 'LA1':
