@@ -106,8 +106,17 @@ export class RiotAPI {
       const result = await this.fetch<LiveGame>(url);
       return result;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('404')) {
-        return null;
+      if (error instanceof Error) {
+        // 404 means player not in game (expected)
+        if (error.message.includes('404')) {
+          return null;
+        }
+        // 403 means API key permissions issue
+        if (error.message.includes('403')) {
+          console.error('Spectator API access denied - check API key permissions');
+          console.log('Note: Spectator API requires a development key or production key with proper permissions');
+          return null; // Return null instead of throwing to allow the app to continue
+        }
       }
       throw error;
     }

@@ -38,19 +38,21 @@ export async function GET(request: Request) {
       const liveGame = await riotApi.getLiveGame(summonerData.id, region);
       console.log('API Route - Live game data:', liveGame);
 
-      // Get recent matches
-      const matchIds = await riotApi.getMatchHistory(account.puuid, region, 1);
-      const lastMatch = matchIds.length > 0 
-        ? await riotApi.getMatch(matchIds[0], region)
-        : null;
-
+      // If we can't access spectator API, we'll still return the data we have
       const response: ApiResponse = {
         account,
         summoner: summonerData,
-        liveGame,
-        lastMatch,
+        liveGame: liveGame, // This will be null if we can't access spectator API
         region
       };
+
+      // Get recent matches if we couldn't get live game data
+      if (!liveGame) {
+        const matchIds = await riotApi.getMatchHistory(account.puuid, region, 1);
+        response.lastMatch = matchIds.length > 0 
+          ? await riotApi.getMatch(matchIds[0], region)
+          : null;
+      }
 
       return NextResponse.json(response);
     } catch (error) {
