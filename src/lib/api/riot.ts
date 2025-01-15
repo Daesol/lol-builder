@@ -94,16 +94,15 @@ export class RiotAPI {
     try {
       const url = `${this.baseUrls[region]}/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
       const result = await this.fetch<LiveGame>(url);
-      
-      if (!result) {
-        console.log('No active game found for summoner');
-        return null;
-      }
-      
       return result;
     } catch (error) {
+      // 404 means player not in game (expected)
       if (error instanceof Error && error.message.includes('404')) {
-        console.log('No active game found for summoner');
+        return null;
+      }
+      // 403 means API key permissions issue
+      if (error instanceof Error && error.message.includes('403')) {
+        console.error('Spectator API access denied - check API key permissions');
         return null;
       }
       throw error;
