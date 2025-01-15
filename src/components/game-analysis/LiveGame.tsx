@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card } from '@/components/common/ui/card';
 import { Button } from '@/components/common/ui/button';
-import { Alert } from '@/components/common/ui/alert';
 import { ChampionAnalysis } from './ChampionAnalysis';
 import type { LiveGame, LiveGameAnalysis } from '@/types/game';
 import { analyzeLiveGame } from '@/lib/utils/analysis';

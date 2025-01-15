@@ -1,4 +1,6 @@
 // src/app/page.tsx
+'use client';
+
 import { GameAnalysis } from '@/components/game-analysis';
 
 export default function Home() {

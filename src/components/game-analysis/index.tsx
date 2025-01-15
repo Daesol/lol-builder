@@ -11,14 +11,13 @@ export const GameAnalysis = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ApiResponse | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState('NA1');
 
   const handleSearch = async (summonerName: string, tagLine: string, region: string) => {
     setLoading(true);
     setError(null);
-    setSelectedRegion(region);
 
     try {
+      console.log('Searching for:', { summonerName, tagLine, region });
       const response = await fetch(
         `/api/live-game?${new URLSearchParams({
           summoner: summonerName,
@@ -30,11 +29,12 @@ export const GameAnalysis = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch data');
+        throw new Error(result.error || `Error: ${response.status}`);
       }
 
       setData(result);
     } catch (err) {
+      console.error('Search failed:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ export const GameAnalysis = () => {
               Player is currently in game! Analyzing match...
             </AlertDescription>
           </Alert>
-          <LiveGameDisplay game={data.liveGame} region={selectedRegion} />
+          <LiveGameDisplay game={data.liveGame} region={data.region} />
         </>
       )}
 

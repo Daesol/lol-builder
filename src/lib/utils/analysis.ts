@@ -1,5 +1,5 @@
 import { riotApi } from '@/lib/api/riot';
-import type { ChampionPerformance, Match, LiveGame, LiveGameAnalysis } from '@/types/game';
+import type { ChampionPerformance, LiveGame, LiveGameAnalysis } from '@/types/game';
 
 export const analyzeChampionPerformance = async (
   puuid: string,

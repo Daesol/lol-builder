@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { riotApi } from '@/lib/api/riot';
 import { analyzeChampionPerformance } from '@/lib/utils/analysis';
 
 export async function GET(request: Request) {

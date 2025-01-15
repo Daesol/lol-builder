@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/common/ui/card';
 import { Button } from '@/components/common/ui/button';
 import { Loader2 } from 'lucide-react';

@@ -121,22 +121,17 @@ export interface Match {
   info: MatchInfo;
 }
 export interface ItemData {
+  id: string;
   name: string;
   description: string;
-  colloq: string;
-  plaintext: string;
   gold: {
     base: number;
-    purchasable: boolean;
     total: number;
     sell: number;
   };
-  tags: string[];
-  maps: Record<string, boolean>;
-  stats: Record<string, number>;
-  depth?: number;
-  into?: string[];
-  from?: string[];
+  image: {
+    full: string;
+  };
 }
 
 export interface ApiResponse {
@@ -201,4 +196,16 @@ export interface LiveGameAnalysis {
     teamId: number;
     championAnalysis: ChampionPerformance;
   }>;
+}
+
+export interface ChampionData {
+  id: string;
+  key: string;
+  name: string;
+  title: string;
+  image: {
+    full: string;
+    sprite: string;
+    group: string;
+  };
 }

@@ -1,6 +1,6 @@
 // app/api/champion-performance/route.ts
 import { NextResponse } from 'next/server';
-import { analyzeChampionPerformance } from '@/lib/performanceAnalyzer';
+import { analyzeChampionPerformance } from '@/lib/utils/analysis';
 
 export async function GET(request: Request) {
   try {
