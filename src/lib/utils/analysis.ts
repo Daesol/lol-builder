@@ -6,46 +6,59 @@ export const analyzeChampionPerformance = async (
   region: string,
   championId: number
 ): Promise<ChampionPerformance> => {
-  const matches = await riotApi.getMatchHistory(puuid, region, 20);
+  // Get match IDs first
+  const matchIds = await riotApi.getMatchHistory(puuid, region, 20);
+  
+  // Fetch full match data for each ID
+  const matchPromises = matchIds.map(matchId => riotApi.getMatch(matchId, region));
+  const matches = await Promise.all(matchPromises);
+  
+  // Filter matches for the specific champion
   const championMatches = matches.filter(match => {
+    if (!match) return false;
     const participant = match.info.participants.find(p => p.puuid === puuid);
     return participant && participant.championId === championId;
   });
 
-  const performance: ChampionPerformance = {
-    championId,
-    matchCount: championMatches.length,
-    wins: 0,
-    totalKills: 0,
-    totalDeaths: 0,
-    totalAssists: 0,
-    totalDamageDealt: 0,
-    totalGoldEarned: 0,
-    matches: [],
-    commonItems: {}
-  };
+  // Initialize performance stats
+  let totalKills = 0;
+  let totalDeaths = 0;
+  let totalAssists = 0;
+  let totalDamageDealt = 0;
+  let totalGoldEarned = 0;
+  let wins = 0;
+  const itemCounts: Record<number, number> = {};
 
-  championMatches.forEach(match => {
-    const participant = match.info.participants.find(p => p.puuid === puuid)!;
-    
-    performance.wins += participant.win ? 1 : 0;
-    performance.totalKills += participant.kills;
-    performance.totalDeaths += participant.deaths;
-    performance.totalAssists += participant.assists;
-    performance.totalDamageDealt += participant.totalDamageDealtToChampions;
-    performance.totalGoldEarned += participant.goldEarned;
+  // Process each match
+  const processedMatches = championMatches.map(match => {
+    if (!match) return null;
+    const participant = match.info.participants.find(p => p.puuid === puuid);
+    if (!participant) return null;
 
-    const items = [
+    // Update totals
+    totalKills += participant.kills;
+    totalDeaths += participant.deaths;
+    totalAssists += participant.assists;
+    totalDamageDealt += participant.totalDamageDealtToChampions;
+    totalGoldEarned += participant.goldEarned;
+    if (participant.win) wins++;
+
+    // Count items
+    [
       participant.item0,
       participant.item1,
       participant.item2,
       participant.item3,
       participant.item4,
       participant.item5,
-      participant.item6
-    ].filter((item): item is number => item !== undefined && item > 0);
+      participant.item6,
+    ].forEach(itemId => {
+      if (itemId > 0) {
+        itemCounts[itemId] = (itemCounts[itemId] || 0) + 1;
+      }
+    });
 
-    performance.matches.push({
+    return {
       matchId: match.metadata.matchId,
       gameCreation: match.info.gameCreation,
       gameDuration: match.info.gameDuration,
@@ -53,26 +66,40 @@ export const analyzeChampionPerformance = async (
       kills: participant.kills,
       deaths: participant.deaths,
       assists: participant.assists,
-      itemBuild: items,
-      damageDealt: participant.totalDamageDealtToChampions,
+      totalDamageDealt: participant.totalDamageDealtToChampions,
       goldEarned: participant.goldEarned,
-      role: participant.teamPosition,
-      lane: participant.lane
-    });
+      items: [
+        participant.item0,
+        participant.item1,
+        participant.item2,
+        participant.item3,
+        participant.item4,
+        participant.item5,
+        participant.item6,
+      ].filter(id => id > 0)
+    };
+  }).filter((match): match is NonNullable<typeof match> => match !== null);
 
-    // Analyze item frequency
-    items.forEach(itemId => {
-      if (!performance.commonItems[itemId]) {
-        performance.commonItems[itemId] = { count: 0, winCount: 0 };
-      }
-      performance.commonItems[itemId].count++;
-      if (participant.win) {
-        performance.commonItems[itemId].winCount++;
-      }
-    });
-  });
+  // Sort items by frequency
+  const commonItems = Object.entries(itemCounts)
+    .sort(([, a], [, b]) => b - a)
+    .reduce((obj, [itemId, count]) => ({
+      ...obj,
+      [itemId]: count
+    }), {});
 
-  return performance;
+  return {
+    championId,
+    matchCount: processedMatches.length,
+    wins,
+    totalKills,
+    totalDeaths,
+    totalAssists,
+    totalDamageDealt,
+    totalGoldEarned,
+    matches: processedMatches,
+    commonItems
+  };
 };
 
 export const analyzeLiveGame = async (
