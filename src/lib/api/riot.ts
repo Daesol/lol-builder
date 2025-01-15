@@ -36,9 +36,21 @@ export class RiotAPI {
     }
 
     await rateLimit.waitForAvailability();
+    
+    // Log the full URL for debugging
+    console.log('Making Riot API request to:', `${url}?api_key=${this.apiKey.substring(0, 8)}...`);
+    
     const response = await fetch(`${url}?api_key=${this.apiKey}`);
     
     if (!response.ok) {
+      // Log more details about the error
+      const errorText = await response.text();
+      console.error('Riot API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: url.split('?')[0], // Log URL without API key
+        error: errorText
+      });
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
 
@@ -46,13 +58,19 @@ export class RiotAPI {
   }
 
   async getAccountData(gameName: string, tagLine: string): Promise<Account> {
-    // Account v1 API uses AMERICAS for all regions
-    const url = `${this.baseUrls.AMERICAS}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
-    const result = await this.fetch<Account>(url);
-    if (!result) {
-      throw new Error('Account not found');
+    try {
+      // For Riot ID lookups, we need to use the account-v1 endpoint
+      const url = `${this.baseUrls.AMERICAS}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
+      console.log('Looking up account:', { gameName, tagLine });
+      const result = await this.fetch<Account>(url);
+      if (!result) {
+        throw new Error('Account not found');
+      }
+      return result;
+    } catch (error) {
+      console.error('Error in getAccountData:', error);
+      throw error;
     }
-    return result;
   }
 
   async getSummonerByPUUID(puuid: string, region: string): Promise<Summoner> {

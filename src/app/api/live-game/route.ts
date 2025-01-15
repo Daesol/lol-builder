@@ -14,7 +14,8 @@ export async function GET(request: Request) {
       summoner, 
       tagLine, 
       region,
-      hasApiKey: !!process.env.RIOT_API_KEY 
+      hasApiKey: !!process.env.RIOT_API_KEY,
+      apiKeyLength: process.env.RIOT_API_KEY?.length 
     });
 
     if (!summoner || !tagLine) {
@@ -31,9 +32,11 @@ export async function GET(request: Request) {
       
       // Get summoner data using PUUID
       const summonerData = await riotApi.getSummonerByPUUID(account.puuid, region);
+      console.log('API Route - Summoner data:', summonerData);
       
-      // Get live game data using PUUID
-      const liveGame = await riotApi.getLiveGame(account.puuid, region);
+      // Get live game data using summonerId
+      const liveGame = await riotApi.getLiveGame(summonerData.id, region);
+      console.log('API Route - Live game data:', liveGame);
 
       // Get recent matches
       const matchIds = await riotApi.getMatchHistory(account.puuid, region, 1);
@@ -58,9 +61,9 @@ export async function GET(request: Request) {
       );
     }
   } catch (error) {
-    console.error('API Route - Route error:', error);
+    console.error('API Route - Error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Route failed' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
