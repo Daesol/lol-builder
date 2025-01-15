@@ -10,7 +10,12 @@ export async function GET(request: Request) {
     const tagLine = searchParams.get('tagLine');
     const region = searchParams.get('region') || 'NA1';
 
-    console.log('Received request:', { summoner, tagLine, region }); // Debug log
+    console.log('API Route - Received request:', { 
+      summoner, 
+      tagLine, 
+      region,
+      hasApiKey: !!process.env.RIOT_API_KEY 
+    });
 
     if (!summoner || !tagLine) {
       return NextResponse.json(
@@ -23,6 +28,7 @@ export async function GET(request: Request) {
       // Get account data
       console.log('Fetching account data...');
       const account = await riotApi.getAccountData(summoner, tagLine);
+      console.log('API Route - Account data:', account);
       if (!account) {
         return NextResponse.json(
           { error: 'Summoner not found' },
@@ -64,22 +70,16 @@ export async function GET(request: Request) {
 
       return NextResponse.json(response);
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('API Route - Request failed:', error);
       return NextResponse.json(
-        { 
-          error: error instanceof Error ? error.message : 'Failed to fetch game data',
-          details: error
-        },
+        { error: error instanceof Error ? error.message : 'Failed to fetch data' },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error('Route error:', error);
+    console.error('API Route - Route error:', error);
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Route failed',
-        details: error
-      },
+      { error: error instanceof Error ? error.message : 'Route failed' },
       { status: 500 }
     );
   }
