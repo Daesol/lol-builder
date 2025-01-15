@@ -48,7 +48,7 @@ export async function GET(request: Request) {
 
       // Get live game data
       console.log('Fetching live game data...');
-      const liveGame = await riotApi.getLiveGame(summonerData.id, region);
+      const liveGame = await riotApi.getLiveGame(summonerData.puuid, region);
 
       // Get last match if not in game
       let lastMatch = null;

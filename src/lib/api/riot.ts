@@ -91,9 +91,9 @@ export class RiotAPI {
     return result;
   }
 
-  async getLiveGame(summonerId: string, region: string): Promise<LiveGame | null> {
+  async getLiveGame(puuid: string, region: string): Promise<LiveGame | null> {
     try {
-      const url = `${this.baseUrls[region]}/lol/spectator/v4/active-games/by-summoner/${summonerId}`;
+      const url = `${this.baseUrls[region]}/lol/spectator/v5/active-games/by-summoner/${puuid}`;
       const result = await this.fetch<LiveGame>(url);
       return result;
     } catch (error) {
