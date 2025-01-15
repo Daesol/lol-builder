@@ -11,22 +11,42 @@ export class RateLimit {
       time => now - time < this.longTermWindow
     );
 
+    // Check long-term rate limit
     if (this.timestamps.length >= this.longTermLimit) {
       const oldestTimestamp = this.timestamps[0];
       const waitTime = this.longTermWindow - (now - oldestTimestamp);
+      console.warn(`Long-term rate limit reached. Waiting ${waitTime}ms before next request`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
 
+    // Check short-term rate limit
     const recentTimestamps = this.timestamps.filter(
       time => now - time < this.shortTermWindow
     );
     if (recentTimestamps.length >= this.shortTermLimit) {
       const oldestRecentTimestamp = recentTimestamps[0];
       const waitTime = this.shortTermWindow - (now - oldestRecentTimestamp);
+      console.warn(`Short-term rate limit reached. Waiting ${waitTime}ms before next request`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
 
     this.timestamps.push(now);
+    
+    // Log current usage
+    const currentShortTermUsage = recentTimestamps.length + 1;
+    const currentLongTermUsage = this.timestamps.length;
+    console.log(`Rate limit status: ${currentShortTermUsage}/${this.shortTermLimit} (short-term), ${currentLongTermUsage}/${this.longTermLimit} (long-term)`);
+  }
+
+  getCurrentUsage(): { shortTerm: number; longTerm: number } {
+    const now = Date.now();
+    const recentTimestamps = this.timestamps.filter(
+      time => now - time < this.shortTermWindow
+    );
+    return {
+      shortTerm: recentTimestamps.length,
+      longTerm: this.timestamps.length
+    };
   }
 }
 

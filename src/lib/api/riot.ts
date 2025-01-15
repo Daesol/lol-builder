@@ -37,21 +37,37 @@ export class RiotAPI {
 
     await rateLimit.waitForAvailability();
     
-    // Log the full URL for debugging
-    console.log('Making Riot API request to:', `${url}?api_key=${this.apiKey.substring(0, 8)}...`);
+    // Log the full URL for debugging (without API key)
+    console.log('Making Riot API request to:', url);
     
     const response = await fetch(`${url}?api_key=${this.apiKey}`);
     
     if (!response.ok) {
-      // Log more details about the error
       const errorText = await response.text();
+      
+      // Check for rate limit errors
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        console.error('Rate limit exceeded:', {
+          retryAfter,
+          method: 'GET',
+          url: url.split('?')[0], // Log URL without API key
+          rateLimitType: response.headers.get('X-Rate-Limit-Type'),
+          error: errorText
+        });
+        throw new Error(`Rate limit exceeded. Retry after ${retryAfter} seconds`);
+      }
+      
+      // Log other errors
       console.error('Riot API Error:', {
         status: response.status,
         statusText: response.statusText,
-        url: url.split('?')[0], // Log URL without API key
-        error: errorText
+        url: url.split('?')[0],
+        error: errorText,
+        headers: Object.fromEntries(response.headers.entries())
       });
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      
+      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     return response.json();
