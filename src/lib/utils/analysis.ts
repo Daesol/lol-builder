@@ -67,6 +67,10 @@ export const analyzeChampionPerformance = async (
         }
       });
 
+      // Determine role and lane
+      const role = participant.teamPosition || participant.role || '';
+      const lane = participant.lane || '';
+
       return {
         matchId: match.metadata.matchId,
         gameCreation: match.info.gameCreation,
@@ -78,8 +82,8 @@ export const analyzeChampionPerformance = async (
         itemBuild: items,
         damageDealt: participant.totalDamageDealtToChampions,
         goldEarned: participant.goldEarned,
-        role: participant.role || participant.teamPosition || '',
-        lane: participant.lane || ''
+        role,
+        lane
       };
     });
 

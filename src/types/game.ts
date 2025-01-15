@@ -67,17 +67,14 @@ export interface Summoner {
 }
 
 export interface MatchParticipant {
-  lane: string;
-  role: string;
-  teamPosition: string;
   puuid: string;
-  summonerName: string;
   championId: number;
-  championName: string;
-  teamId: number;
   kills: number;
   deaths: number;
   assists: number;
+  totalDamageDealtToChampions: number;
+  goldEarned: number;
+  win: boolean;
   item0: number;
   item1: number;
   item2: number;
@@ -85,10 +82,9 @@ export interface MatchParticipant {
   item4: number;
   item5: number;
   item6: number;
-  totalDamageDealtToChampions: number;
-  goldEarned: number;
-  visionScore: number;
-  win: boolean;
+  role: string;
+  teamPosition: string;
+  lane: string;
 }
 
 export interface TeamInfo {
@@ -122,25 +118,7 @@ export interface Match {
     gameId: number;
     gameCreation: number;
     gameDuration: number;
-    participants: Array<{
-      puuid: string;
-      championId: number;
-      kills: number;
-      deaths: number;
-      assists: number;
-      totalDamageDealtToChampions: number;
-      goldEarned: number;
-      win: boolean;
-      item0: number;
-      item1: number;
-      item2: number;
-      item3: number;
-      item4: number;
-      item5: number;
-      item6: number;
-      lane: string;
-      role: string;
-    }>;
+    participants: MatchParticipant[];
   };
 }
 export interface ItemData {
