@@ -120,9 +120,26 @@ export interface Match {
   };
   info: {
     gameId: number;
+    gameCreation: number;
+    gameDuration: number;
     participants: Array<{
       puuid: string;
       championId: number;
+      kills: number;
+      deaths: number;
+      assists: number;
+      totalDamageDealtToChampions: number;
+      goldEarned: number;
+      win: boolean;
+      item0: number;
+      item1: number;
+      item2: number;
+      item3: number;
+      item4: number;
+      item5: number;
+      item6: number;
+      lane: string;
+      role: string;
     }>;
   };
 }
