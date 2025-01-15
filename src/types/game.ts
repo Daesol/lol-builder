@@ -118,7 +118,13 @@ export interface Match {
     matchId: string;
     participants: string[];
   };
-  info: MatchInfo;
+  info: {
+    gameId: number;
+    participants: Array<{
+      puuid: string;
+      championId: number;
+    }>;
+  };
 }
 export interface ItemData {
   id: string;

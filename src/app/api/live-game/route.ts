@@ -1,7 +1,7 @@
 // src/app/api/live-game/route.ts
 import { NextResponse } from 'next/server';
 import { riotApi } from '@/lib/api/riot';
-import type { ApiResponse } from '@/types/game';
+import type { ApiResponse, Match } from '@/types/game';
 
 export async function GET(request: Request) {
   try {
@@ -25,43 +25,23 @@ export async function GET(request: Request) {
     }
 
     try {
-      // Get account data
-      console.log('Fetching account data...');
+      // Get account data first
       const account = await riotApi.getAccountData(summoner, tagLine);
       console.log('API Route - Account data:', account);
-      if (!account) {
-        return NextResponse.json(
-          { error: 'Summoner not found' },
-          { status: 404 }
-        );
-      }
-
-      // Get summoner data
-      console.log('Fetching summoner data...');
+      
+      // Get summoner data using PUUID
       const summonerData = await riotApi.getSummonerByPUUID(account.puuid, region);
-      if (!summonerData) {
-        return NextResponse.json(
-          { error: 'Summoner data not found' },
-          { status: 404 }
-        );
-      }
+      
+      // Get live game data using PUUID
+      const liveGame = await riotApi.getLiveGame(account.puuid, region);
 
-      // Get live game data
-      console.log('Fetching live game data...');
-      const liveGame = await riotApi.getLiveGame(summonerData.puuid, region);
-
-      // Get last match if not in game
-      let lastMatch = null;
-      if (!liveGame) {
-        console.log('No live game found, fetching last match...');
-        const matches = await riotApi.getMatchHistory(account.puuid, region, 1);
-        if (matches.length > 0) {
-          lastMatch = matches[0];
-        }
-      }
+      // Get recent matches
+      const matchIds = await riotApi.getMatchHistory(account.puuid, region, 1);
+      const lastMatch = matchIds.length > 0 
+        ? await riotApi.getMatch(matchIds[0], region)
+        : null;
 
       const response: ApiResponse = {
-        account,
         summoner: summonerData,
         liveGame,
         lastMatch,
