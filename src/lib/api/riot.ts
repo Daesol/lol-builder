@@ -1,8 +1,6 @@
 // lib/api/riot.ts
-import { RateLimit } from '../utils/cache';
+import { rateLimit } from '../utils/cache';
 import type { Account, Match, LiveGame, Summoner } from '@/types/game';
-
-const rateLimit = new RateLimit();
 
 export class RiotAPI {
   private apiKey: string;

@@ -30,6 +30,9 @@ export class RateLimit {
   }
 }
 
+// Create and export a single instance
+export const rateLimit = new RateLimit();
+
 export class Cache<T> {
   private cache: Map<string, { value: T; timestamp: number }> = new Map();
   private ttl: number;
