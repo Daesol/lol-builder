@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { ddragonApi } from '@/lib/api/ddragon';
 import type { ParticipantAnalysis } from '@/types/game';
 
 interface ChampionAnalysisProps {
@@ -42,13 +43,13 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
   const commonItems = Object.entries(analysis.commonItems)
     .sort(([, a], [, b]) => b.count - a.count)
     .slice(0, 3)
-    .map(([itemId]) => itemId);
+    .map(([itemId]) => Number(itemId));
 
   return (
     <div className="mb-4 last:mb-0 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
       <div className="flex items-center gap-3 mb-2">
         <Image 
-          src={`/images/champion/${participant.championId}.png`}
+          src={ddragonApi.getChampionIconUrl(participant.championName)}
           alt={participant.championName}
           width={40}
           height={40}
@@ -81,7 +82,7 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
           {commonItems.map((itemId) => (
             <Image
               key={itemId}
-              src={`/images/item/${itemId}.png`}
+              src={ddragonApi.getItemIconUrl(itemId)}
               alt={`Item ${itemId}`}
               width={24}
               height={24}

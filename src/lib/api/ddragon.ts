@@ -61,6 +61,26 @@ export class DDragonAPI {
 
     return this.cache.items?.[itemId] || null;
   }
+
+  getChampionIconUrl(championName: string): string {
+    return `${this.baseUrl}/cdn/${this.version}/img/champion/${championName}.png`;
+  }
+
+  getItemIconUrl(itemId: number): string {
+    return `${this.baseUrl}/cdn/${this.version}/img/item/${itemId}.png`;
+  }
+
+  getProfileIconUrl(iconId: number): string {
+    return `${this.baseUrl}/cdn/${this.version}/img/profileicon/${iconId}.png`;
+  }
+
+  getRuneIconUrl(runeId: number): string {
+    return `${this.baseUrl}/cdn/img/perk-images/Styles/${runeId}.png`;
+  }
+
+  getSpellIconUrl(spellName: string): string {
+    return `${this.baseUrl}/cdn/${this.version}/img/spell/${spellName}.png`;
+  }
 }
 
 export const ddragonApi = new DDragonAPI();
