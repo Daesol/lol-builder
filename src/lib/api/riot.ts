@@ -12,22 +12,25 @@ export interface AnalysisProgressData {
 }
 
 export class RiotAPI {
-  private apiKey: string;
+  private apiKeys: string[];
+  private currentKeyIndex: number;
   private baseUrls: Record<string, string>;
   
-  constructor() {
-    this.apiKey = process.env.RIOT_API_KEY || '';
+  constructor(apiKeys: string[]) {
+    this.apiKeys = apiKeys.filter(key => key.startsWith('RGAPI-'));
+    this.currentKeyIndex = 0;
     
-    // Enhanced API key validation
-    if (!this.apiKey.startsWith('RGAPI-')) {
-      console.error('Invalid API key format. Key should start with RGAPI-');
-    } else {
-      console.log('API Key validation:', {
-        format: 'Valid (RGAPI- prefix)',
-        length: this.apiKey.length,
-        lastUpdated: new Date().toISOString()
-      });
+    if (this.apiKeys.length === 0) {
+      throw new Error('No valid API keys provided');
     }
+    
+    console.log('API Keys configured:', {
+      count: this.apiKeys.length,
+      validKeys: this.apiKeys.map(key => ({
+        format: 'Valid (RGAPI- prefix)',
+        length: key.length
+      }))
+    });
     
     this.baseUrls = {
       // Platform routing values (regional APIs)
@@ -51,34 +54,51 @@ export class RiotAPI {
     };
   }
 
+  private rotateApiKey() {
+    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+    console.log(`Rotating to API key ${this.currentKeyIndex + 1}/${this.apiKeys.length}`);
+    return this.apiKeys[this.currentKeyIndex];
+  }
+
   private async fetch<T>(url: string): Promise<T | null> {
     console.log('Making API request:', url);
-    await rateLimit.waitForAvailability();
     
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'X-Riot-Token': this.apiKey
+    for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+      try {
+        await rateLimit.waitForAvailability();
+        
+        const response = await fetch(url, {
+          headers: {
+            'X-Riot-Token': this.apiKeys[this.currentKeyIndex]
+          }
+        });
+
+        if (response.status === 429) { // Rate limit exceeded
+          console.log('Rate limit exceeded, rotating API key...');
+          this.rotateApiKey();
+          continue;
         }
-      });
 
-      console.log('Response status:', response.status);
+        if (response.status === 404) {
+          return null;
+        }
 
-      if (response.status === 404) {
-        return null;
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        if (attempt === this.apiKeys.length - 1) {
+          throw error; // Throw if we've tried all keys
+        }
+        console.warn('Request failed, trying next API key:', error);
+        this.rotateApiKey();
       }
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('API response:', data);
-      return data;
-    } catch (error) {
-      console.error('API request error:', error);
-      throw error;
     }
+    
+    throw new Error('All API keys exhausted');
   }
 
   async getAccountData(gameName: string, tagLine: string): Promise<Account> {
@@ -246,4 +266,11 @@ export class RiotAPI {
   }
 }
 
-export const riotApi = new RiotAPI();
+// Initialize with multiple keys
+const API_KEYS = [
+  process.env.RIOT_API_KEY,
+  process.env.RIOT_API_KEY_2,
+  process.env.RIOT_API_KEY_3
+].filter((key): key is string => typeof key === 'string');
+
+export const riotApi = new RiotAPI(API_KEYS);
