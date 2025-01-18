@@ -39,19 +39,11 @@ export async function GET(request: Request) {
     }
 
     try {
-      // Get account data first
       const account = await riotApi.getAccountData(summoner, tagLine);
-      console.log('API Route - Account data:', account);
-      
-      // Get summoner data using PUUID
       const summonerData = await riotApi.getSummonerByPUUID(account.puuid, region);
-      console.log('API Route - Summoner data:', summonerData);
-      
-      // Get live game data using PUUID instead of summoner ID
       const liveGame = await riotApi.getLiveGame(account.puuid, region);
-      console.log('API Route - Live game data:', liveGame);
 
-      // Initialize response with required fields
+      // Initialize response
       const response: ApiResponse = {
         account,
         summoner: summonerData,
@@ -60,11 +52,15 @@ export async function GET(request: Request) {
         region
       };
 
-      // Get recent matches if we couldn't get live game data
+      // Only fetch match history if needed and handle potential failures gracefully
       if (!liveGame) {
-        const matchIds = await riotApi.getMatchHistory(account.puuid, region, 1);
-        if (matchIds.length > 0) {
-          response.lastMatch = await riotApi.getMatch(matchIds[0], region);
+        try {
+          const matchIds = await riotApi.getMatchHistory(account.puuid, region, 1);
+          if (matchIds.length > 0) {
+            response.lastMatch = await riotApi.getMatch(matchIds[0], region);
+          }
+        } catch (error) {
+          console.warn('Failed to fetch match history, continuing with partial data:', error);
         }
       }
 
@@ -72,14 +68,17 @@ export async function GET(request: Request) {
     } catch (error) {
       console.error('API Route - Request failed:', error);
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Failed to fetch data' },
+        { 
+          error: error instanceof Error ? error.message : 'Failed to fetch data',
+          timestamp: new Date().toISOString()
+        },
         { status: 500 }
       );
     }
   } catch (error) {
     console.error('API Route - Error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }

@@ -49,52 +49,53 @@ export class RiotAPI {
 
     await rateLimit.waitForAvailability();
     
-    // Build query parameters
+    // Add API key to params
     const queryParams = new URLSearchParams({
       ...params,
       api_key: this.apiKey
     });
     
-    // Construct full URL
-    const fullUrl = `${url}${url.includes('?') ? '&' : '?'}${queryParams.toString()}`;
+    const fullUrl = `${url}${url.includes('?') ? '&' : '?'}${queryParams}`;
     
-    // Log request details (without API key)
-    console.log('API Request:', {
-      url: url.split('?')[0],
-      method: 'GET',
-      params: Object.keys(params),
-      timestamp: new Date().toISOString()
-    });
-    
-    const response = await fetch(fullUrl);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      const endpoint = url.split('/').slice(3).join('/');
+    try {
+      const response = await fetch(fullUrl);
       
-      // Enhanced error logging
-      console.error('API Error Details:', {
-        endpoint,
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-        headers: Object.fromEntries(response.headers.entries()),
-        timestamp: new Date().toISOString()
-      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        
+        // Enhanced error logging
+        console.error('API Error Details:', {
+          endpoint: url.split('/v5/')[1] || url,
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          headers: Object.fromEntries(response.headers.entries()),
+          timestamp: new Date().toISOString()
+        });
 
-      switch (response.status) {
-        case 401:
-          throw new Error(`Authentication failed for endpoint: ${endpoint}`);
-        case 403:
-          throw new Error(`Access forbidden for endpoint: ${endpoint} - Check API permissions`);
-        case 404:
-          return null as T;
-        default:
-          throw new Error(`API request failed (${response.status}): ${errorText}`);
+        switch (response.status) {
+          case 404:
+            return null as T;
+          case 500:
+            console.warn('Riot API server error, data might be unavailable:', {
+              url: url.split('?')[0],
+              timestamp: new Date().toISOString()
+            });
+            return null as T;
+          default:
+            throw new Error(`API request failed (${response.status}): ${errorText}`);
+        }
       }
-    }
 
-    return response.json();
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      if (error instanceof Error) {
+        // Add request context to error
+        error.message = `${error.message} (URL: ${url.split('?')[0]})`;
+      }
+      throw error;
+    }
   }
 
   async getAccountData(gameName: string, tagLine: string): Promise<Account> {
@@ -167,9 +168,13 @@ export class RiotAPI {
   async getMatchHistory(puuid: string, region: string, count: number = 3): Promise<string[]> {
     try {
       const routingRegion = this.getRoutingValue(region);
-      // Match API is v5
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
-      return await this.fetch<string[]>(url, { count: count.toString() }) || [];
+      const params = { count: count.toString() };
+
+      const result = await this.fetch<string[]>(url, params);
+      
+      // Filter out any null or undefined values
+      return (result || []).filter(Boolean);
     } catch (error) {
       console.error('Match History Error:', {
         error,
@@ -184,16 +189,26 @@ export class RiotAPI {
   async getMatch(matchId: string, region: string): Promise<Match | null> {
     try {
       const routingRegion = this.getRoutingValue(region);
-      // Match API is v5
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
+      
+      console.log('Match API Request:', {
+        matchId,
+        region: routingRegion,
+        timestamp: new Date().toISOString()
+      });
+
       return await this.fetch<Match>(url);
     } catch (error) {
+      // Log specific error details
       console.error('Match Details Error:', {
         error,
         matchId,
         region,
+        errorType: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       });
+
+      // Return null for any error to prevent breaking the UI
       return null;
     }
   }
