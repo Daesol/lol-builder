@@ -48,7 +48,7 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
         const participantAnalyses = await Promise.all(
           game.participants.map(async (participant) => {
             try {
-              console.log('Analyzing participant:', participant.summonerName);
+              console.log('Analyzing participant:', participant.puuid);
               const response = await fetch(
                 `/api/champion-analysis?${new URLSearchParams({
                   puuid: participant.puuid,
@@ -58,13 +58,12 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
               );
               
               if (!response.ok) {
-                console.error(`Analysis failed for ${participant.summonerName}:`, await response.text());
+                console.error(`Analysis failed for ${participant.puuid}:`, await response.text());
                 return {
                   puuid: participant.puuid,
-                  summonerName: participant.summonerName,
-                  teamId: participant.teamId,
                   gameName: participant.riotIdGameName,
                   tagLine: participant.riotIdTagline,
+                  teamId: participant.teamId,
                   championId: participant.championId,
                   championName: participant.championName || '',
                   analysis: defaultAnalysis
@@ -80,9 +79,9 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
               return {
                 puuid: participant.puuid,
                 summonerName: participant.summonerName,
-                teamId: participant.teamId,
                 gameName: participant.riotIdGameName,
                 tagLine: participant.riotIdTagline,
+                teamId: participant.teamId,
                 championId: participant.championId,
                 championName: participant.championName || '',
                 analysis: performance
@@ -92,9 +91,9 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
               return {
                 puuid: participant.puuid,
                 summonerName: participant.summonerName,
-                teamId: participant.teamId,
                 gameName: participant.riotIdGameName,
                 tagLine: participant.riotIdTagline,
+                teamId: participant.teamId,
                 championId: participant.championId,
                 championName: participant.championName || '',
                 analysis: defaultAnalysis

@@ -152,7 +152,6 @@ export interface ApiResponse {
 
 export interface ParticipantAnalysis {
   puuid: string;
-  summonerName: string;
   teamId: number;
   gameName: string;
   tagLine: string;

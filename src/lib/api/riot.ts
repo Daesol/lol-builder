@@ -60,7 +60,7 @@ export class RiotAPI {
 
   private async fetch<T>(url: string): Promise<T | null> {
     // Try each API key until we get a successful response
-    for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+    for (let attempt = 0; attempt < this.apiKeys.length * 2; attempt++) {  // Allow multiple attempts per key
       const currentKey = this.apiKeys[this.currentKeyIndex];
       const currentLimiter = this.rateLimits.get(currentKey)!;
       
@@ -74,8 +74,10 @@ export class RiotAPI {
         });
 
         if (response.status === 429) {  // Rate limit exceeded
+          console.log(`Rate limit hit for key ${this.currentKeyIndex + 1}, rotating...`);
           this.rotateApiKey();
-          continue;
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
+          continue;  // Try again with new key
         }
 
         if (!response.ok) {
@@ -84,10 +86,14 @@ export class RiotAPI {
 
         return response.json();
       } catch (error) {
-        if (attempt === this.apiKeys.length - 1) {
-          throw error;
+        console.error(`Request failed with key ${this.currentKeyIndex + 1}:`, error);
+        
+        if (attempt === this.apiKeys.length * 2 - 1) {
+          throw error;  // Give up after trying all keys multiple times
         }
+        
         this.rotateApiKey();
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
       }
     }
     return null;
@@ -247,6 +253,21 @@ export class RiotAPI {
       default:
         return 'AMERICAS';
     }
+  }
+
+  // Add a method to handle sequential requests with rate limiting
+  async fetchSequential<T>(urls: string[]): Promise<(T | null)[]> {
+    const results: (T | null)[] = [];
+    for (const url of urls) {
+      try {
+        const result = await this.fetch<T>(url);
+        results.push(result);
+      } catch (error) {
+        console.error('Sequential fetch failed:', error);
+        results.push(null);
+      }
+    }
+    return results;
   }
 }
 

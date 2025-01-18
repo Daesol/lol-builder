@@ -21,14 +21,10 @@ export async function GET(request: Request) {
       );
     }
 
-    const matches = await rateLimit.waitForAvailability().then(async () => {
-      const matchIds = await riotApi.getMatchHistory(puuid, region, MATCHES_TO_ANALYZE);
-      return Promise.all(
-        matchIds.map(id => 
-          rateLimit.waitForAvailability().then(() => riotApi.getMatch(id, region))
-        )
-      );
-    });
+    const matchIds = await riotApi.getMatchHistory(puuid, region, MATCHES_TO_ANALYZE);
+    const matches = await riotApi.fetchSequential<Match>(
+      matchIds.map(id => `${riotApi.getMatchUrl(region, id)}`)
+    );
 
     const validMatches = matches.filter((match): match is Match => match !== null);
     

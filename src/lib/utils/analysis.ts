@@ -62,6 +62,13 @@ export async function analyzeChampionPerformance(
         continue;
       }
 
+      // Log participant data to debug
+      console.log('Processing participant:', {
+        puuid,
+        summonerName: participant.puuid,
+        championId: participant.championId
+      });
+
       performance.matchCount++;
       
       if (participant.championId === championId) {
