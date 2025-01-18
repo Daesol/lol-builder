@@ -64,6 +64,13 @@ export async function GET(request: Request) {
         }
       }
 
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: `API request failed: ${response.status}` },
+          { status: response.status }
+        );
+      }
+
       return NextResponse.json(response);
     } catch (error) {
       console.error('API Route - Request failed:', error);
@@ -76,9 +83,9 @@ export async function GET(request: Request) {
       );
     }
   } catch (error) {
-    console.error('API Route - Error:', error);
+    console.error('API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', timestamp: new Date().toISOString() },
+      { error: error instanceof Error ? error.message : 'An unexpected error occurred' },
       { status: 500 }
     );
   }

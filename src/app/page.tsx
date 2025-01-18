@@ -32,7 +32,7 @@ export default function Home() {
 
     try {
       const response = await fetch(
-        `/api/analyze-game?summoner=${encodeURIComponent(summoner)}&tagLine=${encodeURIComponent(tagLine)}&region=${encodeURIComponent(region)}`
+        `/api/live-game?summoner=${encodeURIComponent(summoner)}&tagLine=${encodeURIComponent(tagLine)}&region=${encodeURIComponent(region)}`
       );
       const data = await response.json() as MatchData & { error?: string };
 
