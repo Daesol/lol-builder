@@ -1,8 +1,8 @@
 import React from 'react';
-import { MatchAnalysisProgress } from '@/lib/api/riot';
+import { AnalysisProgressData } from '@/lib/api/riot';
 
 interface Props {
-  progress: MatchAnalysisProgress;
+  progress: AnalysisProgressData;
 }
 
 export const MatchAnalysisProgress: React.FC<Props> = ({ progress }) => {

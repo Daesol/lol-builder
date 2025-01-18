@@ -3,11 +3,11 @@
 
 import { useState } from 'react';
 import { MatchAnalysisProgress } from '@/components/MatchAnalysisProgress';
-import type { MatchAnalysisProgress as ProgressType } from '@/lib/api/riot';
+import type { AnalysisProgressData } from '@/lib/api/riot';
 import type { MatchData } from '@/lib/types';
 
 export default function Home() {
-  const [progress, setProgress] = useState<ProgressType | null>(null);
+  const [progress, setProgress] = useState<AnalysisProgressData | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [matchData, setMatchData] = useState<MatchData | null>(null);
 

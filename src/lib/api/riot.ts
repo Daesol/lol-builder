@@ -2,7 +2,7 @@
 import { rateLimit } from '../utils/cache';
 import type { Account, Match, LiveGame, Summoner } from '@/types/game';
 
-export interface MatchAnalysisProgress {
+export interface AnalysisProgressData {
   total: number;
   current: number;
   completed: boolean;
@@ -178,7 +178,7 @@ export class RiotAPI {
     puuid: string, 
     region: string, 
     count: number = 3,
-    onProgress?: (progress: MatchAnalysisProgress) => void
+    onProgress?: (progress: AnalysisProgressData) => void
   ): Promise<string[]> {
     try {
       const routingRegion = this.getRoutingValue(region);
@@ -224,7 +224,11 @@ export class RiotAPI {
     }
   }
 
-  async getMatch(matchId: string, region: string, onProgress?: (progress: MatchAnalysisProgress) => void): Promise<Match | null> {
+  async getMatch(
+    matchId: string, 
+    region: string, 
+    onProgress?: (progress: AnalysisProgressData) => void
+  ): Promise<Match | null> {
     try {
       const routingRegion = this.getRoutingValue(region);
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
