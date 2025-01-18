@@ -3,7 +3,7 @@ import { analyzeChampionPerformance } from '@/lib/utils/analysis';
 import { riotApi } from '@/lib/api/riot';
 import { REGIONS } from '@/constants/game';
 import type { Match } from '@/types/game';
-import { kv } from '@vercel/kv';
+import { analysisKV, type AnalysisSession } from '@/lib/kv';
 
 const MATCHES_TO_ANALYZE = 10;
 const BATCH_SIZE = 3;
@@ -20,17 +20,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    // New session - start analysis
     if (!sessionId) {
       const newSessionId = Math.random().toString(36).substring(7);
       const matchIds = await riotApi.getMatchHistory(puuid, region, MATCHES_TO_ANALYZE);
       
-      await kv.set(newSessionId, {
+      const initialSession: AnalysisSession = {
         matchIds,
         processed: 0,
         results: [],
         completed: false
-      }, { ex: 300 }); // Expire in 5 minutes
+      };
+
+      await analysisKV.createSession(newSessionId, initialSession);
 
       return NextResponse.json({
         sessionId: newSessionId,
@@ -40,8 +41,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // Continue existing session
-    const session = await kv.get(sessionId);
+    const session = await analysisKV.getSession(sessionId);
     if (!session) {
       return NextResponse.json({ error: 'Session expired' }, { status: 404 });
     }
@@ -57,20 +57,22 @@ export async function GET(request: Request) {
         nextBatch.map(id => riotApi.getMatchUrl(region, id))
       );
 
-      session.results.push(...matches);
+      // Filter out null values before pushing to results
+      const validMatches = matches.filter((match): match is Match => match !== null);
+      session.results.push(...validMatches);
       session.processed += nextBatch.length;
       session.completed = session.processed >= session.matchIds.length;
 
-      await kv.set(sessionId, session, { ex: 300 });
+      await analysisKV.updateSession(sessionId, session);
 
       if (session.completed) {
-        const validMatches = session.results.filter((match): match is Match => match !== null);
+        // No need to filter again since we already filtered when pushing
         const analysis = await analyzeChampionPerformance(
-          validMatches,
+          session.results,
           puuid,
           parseInt(championId, 10)
         );
-        await kv.del(sessionId);
+        await analysisKV.deleteSession(sessionId);
         return NextResponse.json(analysis);
       }
 
