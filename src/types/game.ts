@@ -152,51 +152,35 @@ export interface ChampionAnalysisParticipant {
 }
 
 export interface ChampionAnalysisProps {
-  participant: ChampionAnalysisParticipant;
-  region: string;
+  participant: ParticipantAnalysis;
+  analysis: ChampionPerformance;
 }
 
 export interface ChampionPerformance {
-  championId: number;
   matchCount: number;
   wins: number;
   totalKills: number;
   totalDeaths: number;
   totalAssists: number;
   totalDamageDealt: number;
-  totalGoldEarned: number;
-  matches: Array<{
-    matchId: string;
-    gameCreation: number;
-    gameDuration: number;
-    win: boolean;
-    kills: number;
-    deaths: number;
-    assists: number;
-    itemBuild: number[];
-    damageDealt: number;
-    goldEarned: number;
-    role: string;
-    lane: string;
-  }>;
-  commonItems: {
-    [key: string]: {
-      count: number;
-      winCount: number;
-    };
+  commonItems: Record<number, { count: number; winCount: number }>;
+  commonRunes: {
+    primaryTree: number;
+    secondaryTree: number;
+    keystone: number;
   };
 }
+
+export interface ParticipantAnalysis {
+  puuid: string;
+  summonerName: string;
+  teamId: number;
+  analysis: ChampionPerformance;
+}
+
 export interface LiveGameAnalysis {
-  timestamp: number;
-  gameId: number;
-  gameMode: string;
-  participants: Array<{
-    summonerId: string;
-    summonerName: string;
-    championId: number;
-    teamId: number;
-    championAnalysis: ChampionPerformance;
-  }>;
+  blueTeam: ParticipantAnalysis[];
+  redTeam: ParticipantAnalysis[];
 }
 
 export interface ChampionData {

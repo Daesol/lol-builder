@@ -1,5 +1,5 @@
 import { riotApi } from '@/lib/api/riot';
-import type { ChampionPerformance, LiveGame, LiveGameAnalysis } from '@/types/game';
+import type { ChampionPerformance, LiveGame, LiveGameAnalysis, Match } from '@/types/game';
 import { rateLimit } from '@/lib/utils/cache';
 
 export async function analyzeChampionPerformance(
@@ -41,46 +41,34 @@ export const analyzeLiveGame = async (
   for (const participant of game.participants) {
     await rateLimit.waitForAvailability();
     try {
+      // Get match history first
+      const matchIds = await riotApi.getMatchHistory(participant.puuid, region, 3);
+      const matches = await Promise.all(
+        matchIds.map(id => riotApi.getMatch(id, region))
+      );
+      
+      // Filter out null matches
+      const validMatches = matches.filter((match): match is Match => match !== null);
+
       const analysis = await analyzeChampionPerformance(
+        validMatches,
         participant.puuid,
-        region,
         participant.championId
       );
 
       participantAnalyses.push({
-        summonerId: participant.summonerId,
+        puuid: participant.puuid,
         summonerName: participant.summonerName,
-        championId: participant.championId,
         teamId: participant.teamId,
-        championAnalysis: analysis
+        analysis
       });
     } catch (error) {
       console.error(`Error analyzing participant ${participant.summonerName}:`, error);
-      participantAnalyses.push({
-        summonerId: participant.summonerId,
-        summonerName: participant.summonerName,
-        championId: participant.championId,
-        teamId: participant.teamId,
-        championAnalysis: {
-          championId: participant.championId,
-          matchCount: 0,
-          wins: 0,
-          totalKills: 0,
-          totalDeaths: 0,
-          totalAssists: 0,
-          totalDamageDealt: 0,
-          totalGoldEarned: 0,
-          matches: [],
-          commonItems: {}
-        }
-      });
     }
   }
 
   return {
-    timestamp: Date.now(),
-    gameId: game.gameId,
-    gameMode: game.gameMode,
-    participants: participantAnalyses
+    blueTeam: participantAnalyses.filter(p => p.teamId === 100),
+    redTeam: participantAnalyses.filter(p => p.teamId === 200)
   };
 };

@@ -4,35 +4,10 @@ import { Button } from '@/components/common/ui/button';
 import { Loader2 } from 'lucide-react';
 import type { ChampionAnalysisProps, ChampionPerformance } from '@/types/game';
 
-export const ChampionAnalysis = ({ participant, region }: ChampionAnalysisProps) => {
-  const [performance, setPerformance] = useState<ChampionPerformance | null>(null);
+export const ChampionAnalysis = ({ participant, analysis }: ChampionAnalysisProps) => {
+  const [performance, setPerformance] = useState<ChampionPerformance | null>(analysis);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchAnalysis = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        `/api/champion-analysis?${new URLSearchParams({
-          puuid: participant.puuid,
-          championId: participant.championId.toString(),
-          region: region
-        })}`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Analysis failed');
-      }
-      
-      const data = await response.json();
-      setPerformance(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze champion');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const renderStats = () => {
     if (!performance) return null;
@@ -73,13 +48,7 @@ export const ChampionAnalysis = ({ participant, region }: ChampionAnalysisProps)
         <div className="flex justify-between items-start">
           <div>
             <h4 className="font-medium">{participant.summonerName}</h4>
-            <p className="text-sm text-gray-400">Champion ID: {participant.championId}</p>
           </div>
-          {!performance && !loading && (
-            <Button onClick={fetchAnalysis} size="sm">
-              Analyze
-            </Button>
-          )}
           {loading && <Loader2 className="h-5 w-5 animate-spin" />}
         </div>
         {error && <p className="text-red-400 text-sm mt-2">{error}</p>}

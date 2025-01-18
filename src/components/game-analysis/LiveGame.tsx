@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/common/ui/card';
 import { Button } from '@/components/common/ui/button';
 import { ChampionAnalysis } from './ChampionAnalysis';
-import type { LiveGame, LiveGameAnalysis } from '@/types/game';
+import type { LiveGame, LiveGameAnalysis, ParticipantAnalysis } from '@/types/game';
 import { analyzeLiveGame } from '@/lib/utils/analysis';
 
 interface LiveGameProps {
