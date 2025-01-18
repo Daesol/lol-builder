@@ -15,11 +15,19 @@ export async function analyzeChampionPerformance(
 
   const performance: ChampionPerformance = {
     matchCount: 0,
+    championMatchCount: 0,
     wins: 0,
+    championWins: 0,
     totalKills: 0,
     totalDeaths: 0,
     totalAssists: 0,
     totalDamageDealt: 0,
+    championStats: {
+      kills: 0,
+      deaths: 0,
+      assists: 0,
+      damageDealt: 0
+    },
     commonItems: {},
     commonRunes: {
       primaryTree: 0,
@@ -28,7 +36,7 @@ export async function analyzeChampionPerformance(
     }
   };
 
-  const itemCounts: Record<string, number> = {};
+  const itemCounts: Record<number, { count: number; winCount: number }> = {};
 
   matches.forEach(match => {
     const participant = match.info.participants.find(p => p.puuid === puuid);
@@ -53,6 +61,16 @@ export async function analyzeChampionPerformance(
     }
 
     performance.matchCount++;
+    
+    if (participant.championId === championId) {
+      performance.championMatchCount++;
+      if (participant.win) performance.championWins++;
+      performance.championStats.kills += participant.kills;
+      performance.championStats.deaths += participant.deaths;
+      performance.championStats.assists += participant.assists;
+      performance.championStats.damageDealt += participant.totalDamageDealtToChampions;
+    }
+
     if (participant.win) performance.wins++;
     performance.totalKills += participant.kills;
     performance.totalDeaths += participant.deaths;
@@ -69,7 +87,13 @@ export async function analyzeChampionPerformance(
       participant.item5
     ].forEach(itemId => {
       if (itemId && itemId > 0) {
-        itemCounts[itemId] = (itemCounts[itemId] || 0) + 1;
+        if (!itemCounts[itemId]) {
+          itemCounts[itemId] = { count: 0, winCount: 0 };
+        }
+        itemCounts[itemId].count++;
+        if (participant.win) {
+          itemCounts[itemId].winCount++;
+        }
       }
     });
 
@@ -99,38 +123,24 @@ export async function analyzeChampionPerformance(
   return performance;
 }
 
-export const analyzeLiveGame = async (
-  game: LiveGame,
-  region: string
-): Promise<LiveGameAnalysis> => {
-  console.log('Starting live game analysis for', game.participants.length, 'participants');
+export const analyzeLiveGame = async (game: LiveGame, region: string): Promise<LiveGameAnalysis> => {
   const participantAnalyses = [];
   
   for (const participant of game.participants) {
-    await rateLimit.waitForAvailability();
     try {
-      // Get match history first - now 5 matches
       const matchIds = await riotApi.getMatchHistory(participant.puuid, region, 5);
-      console.log(`Fetched ${matchIds.length} matches for ${participant.summonerName}`);
-      
-      const matches = await Promise.all(
-        matchIds.map(id => riotApi.getMatch(id, region))
-      );
-      
-      // Filter out null matches
+      const matches = await Promise.all(matchIds.map(id => riotApi.getMatch(id, region)));
       const validMatches = matches.filter((match): match is Match => match !== null);
-      console.log(`${validMatches.length} valid matches for analysis`);
-
-      const analysis = await analyzeChampionPerformance(
-        validMatches,
-        participant.puuid,
-        participant.championId
-      );
+      const analysis = await analyzeChampionPerformance(validMatches, participant.puuid, participant.championId);
 
       participantAnalyses.push({
         puuid: participant.puuid,
         summonerName: participant.summonerName,
         teamId: participant.teamId,
+        gameName: participant.riotIdGameName,
+        tagLine: participant.riotIdTagline,
+        championId: participant.championId,
+        championName: participant.championName || '',
         analysis
       });
     } catch (error) {

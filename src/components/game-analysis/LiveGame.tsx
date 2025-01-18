@@ -1,16 +1,41 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/common/ui/card';
 import { ChampionAnalysis } from './ChampionAnalysis';
-import type { LiveGame, LiveGameAnalysis } from '@/types/game';
+import type { LiveGame as LiveGameType, ParticipantAnalysis } from '@/types/game';
 import { Loader2 } from 'lucide-react';
 
-interface LiveGameProps {
-  game: LiveGame;
+interface LiveGameDisplayProps {
+  game: LiveGameType;
   region: string;
 }
 
-export const LiveGameDisplay = ({ game, region }: LiveGameProps) => {
-  const [analysis, setAnalysis] = useState<LiveGameAnalysis | null>(null);
+interface ChampionAnalysisProps {
+  participant: ParticipantAnalysis;
+  analysis: ParticipantAnalysis['analysis'];
+}
+
+// Update the default error analysis object
+const defaultAnalysis = {
+  matchCount: 0,
+  championMatchCount: 0,
+  wins: 0,
+  championWins: 0,
+  totalKills: 0,
+  totalDeaths: 0,
+  totalAssists: 0,
+  totalDamageDealt: 0,
+  championStats: {
+    kills: 0,
+    deaths: 0,
+    assists: 0,
+    damageDealt: 0
+  },
+  commonItems: {},
+  commonRunes: { primaryTree: 0, secondaryTree: 0, keystone: 0 }
+};
+
+export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }) => {
+  const [analysis, setAnalysis] = useState<{ blueTeam: ParticipantAnalysis[]; redTeam: ParticipantAnalysis[]; } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,16 +63,11 @@ export const LiveGameDisplay = ({ game, region }: LiveGameProps) => {
                   puuid: participant.puuid,
                   summonerName: participant.summonerName,
                   teamId: participant.teamId,
-                  analysis: {
-                    matchCount: 0,
-                    wins: 0,
-                    totalKills: 0,
-                    totalDeaths: 0,
-                    totalAssists: 0,
-                    totalDamageDealt: 0,
-                    commonItems: {},
-                    commonRunes: { primaryTree: 0, secondaryTree: 0, keystone: 0 }
-                  }
+                  gameName: participant.riotIdGameName,
+                  tagLine: participant.riotIdTagline,
+                  championId: participant.championId,
+                  championName: participant.championName || '',
+                  analysis: defaultAnalysis
                 };
               }
               
@@ -61,6 +81,10 @@ export const LiveGameDisplay = ({ game, region }: LiveGameProps) => {
                 puuid: participant.puuid,
                 summonerName: participant.summonerName,
                 teamId: participant.teamId,
+                gameName: participant.riotIdGameName,
+                tagLine: participant.riotIdTagline,
+                championId: participant.championId,
+                championName: participant.championName || '',
                 analysis: performance
               };
             } catch (error) {
@@ -69,16 +93,11 @@ export const LiveGameDisplay = ({ game, region }: LiveGameProps) => {
                 puuid: participant.puuid,
                 summonerName: participant.summonerName,
                 teamId: participant.teamId,
-                analysis: {
-                  matchCount: 0,
-                  wins: 0,
-                  totalKills: 0,
-                  totalDeaths: 0,
-                  totalAssists: 0,
-                  totalDamageDealt: 0,
-                  commonItems: {},
-                  commonRunes: { primaryTree: 0, secondaryTree: 0, keystone: 0 }
-                }
+                gameName: participant.riotIdGameName,
+                tagLine: participant.riotIdTagline,
+                championId: participant.championId,
+                championName: participant.championName || '',
+                analysis: defaultAnalysis
               };
             }
           })

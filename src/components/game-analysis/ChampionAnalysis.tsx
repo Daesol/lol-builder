@@ -2,27 +2,35 @@ import Image from 'next/image';
 import type { ParticipantAnalysis } from '@/types/game';
 
 interface ChampionAnalysisProps {
-  participant: {
-    summonerName: string;
-    gameName: string;
-    tagLine: string;
-    puuid: string;
-    teamId: number;
-    championId: number;
-    championName: string;
-  };
+  participant: ParticipantAnalysis;
   analysis: {
     matchCount: number;
+    championMatchCount: number;
     wins: number;
+    championWins: number;
     totalKills: number;
     totalDeaths: number;
     totalAssists: number;
     totalDamageDealt: number;
-    commonItems: Record<string, number>;
+    championStats: {
+      kills: number;
+      deaths: number;
+      assists: number;
+      damageDealt: number;
+    };
+    commonItems: Record<number, { count: number; winCount: number }>;
+    commonRunes: {
+      primaryTree: number;
+      secondaryTree: number;
+      keystone: number;
+    };
   };
 }
 
-export const ChampionAnalysis = ({ participant, analysis }: ChampionAnalysisProps) => {
+export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
+  participant,
+  analysis
+}) => {
   // Calculate averages
   const avgKills = analysis.matchCount ? (analysis.totalKills / analysis.matchCount).toFixed(1) : '0';
   const avgDeaths = analysis.matchCount ? (analysis.totalDeaths / analysis.matchCount).toFixed(1) : '0';
@@ -32,7 +40,7 @@ export const ChampionAnalysis = ({ participant, analysis }: ChampionAnalysisProp
 
   // Get most common items
   const commonItems = Object.entries(analysis.commonItems)
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => b.count - a.count)
     .slice(0, 3)
     .map(([itemId]) => itemId);
 

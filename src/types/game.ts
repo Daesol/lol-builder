@@ -55,7 +55,10 @@ export interface LiveGame {
   }[];
   gameStartTime: number;
   gameLength: number;
+  blueTeam: ParticipantAnalysis[];
+  redTeam: ParticipantAnalysis[];
 }
+
 export interface Summoner {
   id: string;
   accountId: string;
@@ -121,6 +124,7 @@ export interface Match {
     participants: MatchParticipant[];
   };
 }
+
 export interface ItemData {
   id: string;
   name: string;
@@ -136,11 +140,23 @@ export interface ItemData {
 }
 
 export interface ApiResponse {
-  account: Account;
-  summoner: Summoner;
   liveGame: LiveGame | null;
-  lastMatch: Match | null;
+  summoner: {
+    name: string;
+    summonerLevel: number;
+  };
   region: string;
+}
+
+export interface ParticipantAnalysis {
+  puuid: string;
+  summonerName: string;
+  teamId: number;
+  gameName: string;
+  tagLine: string;
+  championId: number;
+  championName: string;
+  analysis: ChampionPerformance;
 }
 
 export interface ChampionAnalysisParticipant {
@@ -158,24 +174,25 @@ export interface ChampionAnalysisProps {
 
 export interface ChampionPerformance {
   matchCount: number;
+  championMatchCount: number;
   wins: number;
+  championWins: number;
   totalKills: number;
   totalDeaths: number;
   totalAssists: number;
   totalDamageDealt: number;
+  championStats: {
+    kills: number;
+    deaths: number;
+    assists: number;
+    damageDealt: number;
+  };
   commonItems: Record<number, { count: number; winCount: number }>;
   commonRunes: {
     primaryTree: number;
     secondaryTree: number;
     keystone: number;
   };
-}
-
-export interface ParticipantAnalysis {
-  puuid: string;
-  summonerName: string;
-  teamId: number;
-  analysis: ChampionPerformance;
 }
 
 export interface LiveGameAnalysis {
