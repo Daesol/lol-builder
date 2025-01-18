@@ -54,6 +54,7 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
           width={40}
           height={40}
           className="rounded-full"
+          unoptimized
         />
         <div>
           <div className="font-semibold">{participant.gameName}</div>
@@ -87,6 +88,7 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
               width={24}
               height={24}
               className="rounded"
+              unoptimized
             />
           ))}
         </div>
