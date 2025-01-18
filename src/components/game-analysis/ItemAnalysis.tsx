@@ -61,7 +61,7 @@ export const ItemAnalysis = ({ itemIds, winRates }: ItemAnalysisProps) => {
             <CardContent className="p-2">
               <div className="relative w-12 h-12">
                 <Image
-                  src={ddragonApi.getItemImageUrl(itemId)}
+                  src={ddragonApi.getItemIconUrl(itemId)}
                   alt={item.name}
                   fill
                   className="object-cover rounded"
