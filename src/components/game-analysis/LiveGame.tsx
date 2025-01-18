@@ -38,6 +38,7 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
   const [analysis, setAnalysis] = useState<LiveGameAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<Record<string, number>>({});
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const analyzeParticipant = async (participant: LiveGameParticipant) => {
@@ -97,6 +98,7 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
         });
       } catch (error) {
         console.error('Analysis failed:', error);
+        setError(error instanceof Error ? error.message : 'Analysis failed');
       } finally {
         setLoading(false);
       }
@@ -113,8 +115,6 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
       </div>
     );
   }
-
-  const [error, setError] = useState<string | null>(null);
 
   if (error) {
     return (
