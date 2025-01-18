@@ -60,7 +60,7 @@ export class RiotAPI {
 
   private async fetch<T>(url: string): Promise<T | null> {
     // Try each API key until we get a successful response
-    for (let attempt = 0; attempt < this.apiKeys.length * 2; attempt++) {  // Allow multiple attempts per key
+    for (let attempt = 0; attempt < this.apiKeys.length * 2; attempt++) {
       const currentKey = this.apiKeys[this.currentKeyIndex];
       const currentLimiter = this.rateLimits.get(currentKey)!;
       
@@ -73,27 +73,51 @@ export class RiotAPI {
           }
         });
 
-        if (response.status === 429) {  // Rate limit exceeded
+        // Log detailed response info for debugging
+        console.log('API Response:', {
+          url: url.split('?')[0], // Hide query params
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          key: this.currentKeyIndex + 1
+        });
+
+        if (response.status === 429) {
           console.log(`Rate limit hit for key ${this.currentKeyIndex + 1}, rotating...`);
           this.rotateApiKey();
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
-          continue;  // Try again with new key
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+
+        if (response.status === 500) {
+          const errorText = await response.text();
+          console.error('Riot API 500 error:', {
+            url: url.split('?')[0],
+            error: errorText,
+            key: this.currentKeyIndex + 1
+          });
+          // Don't immediately retry on 500 errors
+          throw new Error(`Riot API error: ${errorText}`);
         }
 
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
+          throw new Error(`API request failed: ${response.status} - ${response.statusText}`);
         }
 
         return response.json();
       } catch (error) {
-        console.error(`Request failed with key ${this.currentKeyIndex + 1}:`, error);
+        console.error(`Request failed with key ${this.currentKeyIndex + 1}:`, {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          url: url.split('?')[0],
+          attempt: attempt + 1
+        });
         
         if (attempt === this.apiKeys.length * 2 - 1) {
-          throw error;  // Give up after trying all keys multiple times
+          throw error;
         }
         
         this.rotateApiKey();
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
     return null;
@@ -261,13 +285,30 @@ export class RiotAPI {
   // Add a method to handle sequential requests with rate limiting
   async fetchSequential<T>(urls: string[]): Promise<(T | null)[]> {
     const results: (T | null)[] = [];
-    for (const url of urls) {
+    const batchSize = 3; // Process in smaller batches
+    
+    for (let i = 0; i < urls.length; i += batchSize) {
+      const batch = urls.slice(i, i + batchSize);
+      console.log(`Processing batch ${i / batchSize + 1}/${Math.ceil(urls.length / batchSize)}`);
+      
       try {
-        const result = await this.fetch<T>(url);
-        results.push(result);
+        const batchResults = await Promise.all(
+          batch.map(async url => {
+            try {
+              return await this.fetch<T>(url);
+            } catch (error) {
+              console.error('Batch request failed:', {
+                url: url.split('?')[0],
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
+              return null;
+            }
+          })
+        );
+        results.push(...batchResults);
       } catch (error) {
-        console.error('Sequential fetch failed:', error);
-        results.push(null);
+        console.error('Batch processing failed:', error);
+        results.push(...new Array(batch.length).fill(null));
       }
     }
     return results;

@@ -21,25 +21,40 @@ export async function GET(request: Request) {
       );
     }
 
-    const matchIds = await riotApi.getMatchHistory(puuid, region, MATCHES_TO_ANALYZE);
-    const matches = await riotApi.fetchSequential<Match>(
-      matchIds.map(id => `${riotApi.getMatchUrl(region, id)}`)
+    // Set a shorter timeout for development
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Analysis timeout')), 8000)
     );
 
-    const validMatches = matches.filter((match): match is Match => match !== null);
-    
-    const analysis = await analyzeChampionPerformance(
-      validMatches,
-      puuid,
-      parseInt(championId, 10)
-    );
+    const analysisPromise = async () => {
+      const matchIds = await riotApi.getMatchHistory(puuid, region, MATCHES_TO_ANALYZE);
+      console.log(`Found ${matchIds.length} matches to analyze`);
 
+      const matches = await riotApi.fetchSequential<Match>(
+        matchIds.map(id => riotApi.getMatchUrl(region, id))
+      );
+
+      const validMatches = matches.filter((match): match is Match => match !== null);
+      console.log(`Successfully processed ${validMatches.length}/${matchIds.length} matches`);
+
+      return analyzeChampionPerformance(
+        validMatches,
+        puuid,
+        parseInt(championId, 10)
+      );
+    };
+
+    const analysis = await Promise.race([analysisPromise(), timeoutPromise]);
     return NextResponse.json(analysis);
   } catch (error) {
-    console.error('Analysis failed:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Analysis failed' },
-      { status: 500 }
-    );
+    console.error('Analysis failed:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
+    const status = error instanceof Error && error.message === 'Analysis timeout' ? 504 : 500;
+    const message = error instanceof Error ? error.message : 'Analysis failed';
+
+    return NextResponse.json({ error: message }, { status });
   }
 } 
