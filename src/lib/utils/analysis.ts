@@ -7,6 +7,12 @@ export async function analyzeChampionPerformance(
   puuid: string,
   championId: number
 ): Promise<ChampionPerformance> {
+  console.log('Starting champion performance analysis:', {
+    matchCount: matches.length,
+    puuid,
+    championId
+  });
+
   const performance: ChampionPerformance = {
     matchCount: 0,
     wins: 0,
@@ -22,12 +28,34 @@ export async function analyzeChampionPerformance(
     }
   };
 
-  // Filter out null matches and analyze each match
-  matches.filter((match): match is Match => match !== null)
-        .forEach(match => {
-    // Analysis logic here
+  matches.forEach(match => {
+    const participant = match.info.participants.find(p => p.puuid === puuid);
+    if (!participant) {
+      console.log('Participant not found in match:', match.metadata.matchId);
+      return;
+    }
+
+    performance.matchCount++;
+    if (participant.win) performance.wins++;
+    performance.totalKills += participant.kills;
+    performance.totalDeaths += participant.deaths;
+    performance.totalAssists += participant.assists;
+    performance.totalDamageDealt += participant.totalDamageDealtToChampions;
+
+    // Log match stats
+    console.log('Processed match:', {
+      matchId: match.metadata.matchId,
+      stats: {
+        kills: participant.kills,
+        deaths: participant.deaths,
+        assists: participant.assists,
+        damage: participant.totalDamageDealtToChampions,
+        win: participant.win
+      }
+    });
   });
 
+  console.log('Analysis complete:', performance);
   return performance;
 }
 
