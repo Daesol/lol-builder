@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/common/ui/card';
 import { ChampionAnalysis } from './ChampionAnalysis';
-import type { LiveGame as LiveGameType, ParticipantAnalysis } from '@/types/game';
+import type { LiveGameAnalysis, LiveGameParticipant, LiveGame as LiveGameType, ParticipantAnalysis } from '@/types/game';
 import { Loader2 } from 'lucide-react';
 
 interface LiveGameDisplayProps {
@@ -35,81 +35,68 @@ const defaultAnalysis = {
 };
 
 export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }) => {
-  const [analysis, setAnalysis] = useState<{ blueTeam: ParticipantAnalysis[]; redTeam: ParticipantAnalysis[]; } | null>(null);
+  const [analysis, setAnalysis] = useState<LiveGameAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const analyzeParticipants = async () => {
-      console.log('Starting participant analysis...', { game, region });
-      setLoading(true);
-      try {
-        // Analyze all participants
-        const participantAnalyses = await Promise.all(
-          game.participants.map(async (participant) => {
-            try {
-              console.log('Analyzing participant:', participant.puuid);
-              const response = await fetch(
-                `/api/champion-analysis?${new URLSearchParams({
-                  puuid: participant.puuid,
-                  championId: participant.championId.toString(),
-                  region
-                })}`
-              );
-              
-              if (!response.ok) {
-                console.error(`Analysis failed for ${participant.puuid}:`, await response.text());
-                return {
-                  puuid: participant.puuid,
-                  gameName: participant.riotIdGameName,
-                  tagLine: participant.riotIdTagline,
-                  teamId: participant.teamId,
-                  championId: participant.championId,
-                  championName: participant.championName || '',
-                  analysis: defaultAnalysis
-                };
-              }
-              
-              const performance = await response.json();
-              console.log('Participant analysis complete:', {
-                summonerName: participant.summonerName,
-                performance
-              });
-              
-              return {
-                puuid: participant.puuid,
-                summonerName: participant.summonerName,
-                gameName: participant.riotIdGameName,
-                tagLine: participant.riotIdTagline,
-                teamId: participant.teamId,
-                championId: participant.championId,
-                championName: participant.championName || '',
-                analysis: performance
-              };
-            } catch (error) {
-              console.error(`Error analyzing ${participant.summonerName}:`, error);
-              return {
-                puuid: participant.puuid,
-                summonerName: participant.summonerName,
-                gameName: participant.riotIdGameName,
-                tagLine: participant.riotIdTagline,
-                teamId: participant.teamId,
-                championId: participant.championId,
-                championName: participant.championName || '',
-                analysis: defaultAnalysis
-              };
-            }
-          })
+    const analyzeParticipant = async (participant: LiveGameParticipant) => {
+      let sessionId = '';
+      
+      while (true) {
+        const response = await fetch(
+          `/api/champion-analysis?${new URLSearchParams({
+            puuid: participant.puuid,
+            championId: participant.championId.toString(),
+            region,
+            ...(sessionId ? { sessionId } : {})
+          })}`
         );
 
-        console.log('All participants analyzed:', participantAnalyses);
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        const data = await response.json();
+        
+        if (data.sessionId) {
+          sessionId = data.sessionId;
+          setProgress(prev => ({
+            ...prev,
+            [participant.puuid]: (data.processed / data.total) * 100
+          }));
+          
+          if (!data.completed) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+        }
+
+        return {
+          puuid: participant.puuid,
+          gameName: participant.riotIdGameName,
+          tagLine: participant.riotIdTagline,
+          teamId: participant.teamId,
+          championId: participant.championId,
+          championName: participant.championName || '',
+          analysis: data
+        };
+      }
+    };
+
+    const analyzeParticipants = async () => {
+      setLoading(true);
+      try {
+        const analyses = await Promise.all(
+          game.participants.map(analyzeParticipant)
+        );
+
         setAnalysis({
-          blueTeam: participantAnalyses.filter(p => p.teamId === 100),
-          redTeam: participantAnalyses.filter(p => p.teamId === 200)
+          blueTeam: analyses.filter(p => p.teamId === 100),
+          redTeam: analyses.filter(p => p.teamId === 200)
         });
       } catch (error) {
         console.error('Analysis failed:', error);
-        setError(error instanceof Error ? error.message : 'Analysis failed');
       } finally {
         setLoading(false);
       }
@@ -126,6 +113,8 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
       </div>
     );
   }
+
+  const [error, setError] = useState<string | null>(null);
 
   if (error) {
     return (
