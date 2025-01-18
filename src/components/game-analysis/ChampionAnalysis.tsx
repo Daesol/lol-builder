@@ -1,32 +1,6 @@
 import Image from 'next/image';
 import { ddragonApi } from '@/lib/api/ddragon';
-import type { ParticipantAnalysis } from '@/types/game';
-
-interface ChampionAnalysisProps {
-  participant: ParticipantAnalysis;
-  analysis: {
-    matchCount: number;
-    championMatchCount: number;
-    wins: number;
-    championWins: number;
-    totalKills: number;
-    totalDeaths: number;
-    totalAssists: number;
-    totalDamageDealt: number;
-    championStats: {
-      kills: number;
-      deaths: number;
-      assists: number;
-      damageDealt: number;
-    };
-    commonItems: Record<number, { count: number; winCount: number }>;
-    commonRunes: {
-      primaryTree: number;
-      secondaryTree: number;
-      keystone: number;
-    };
-  };
-}
+import type { ChampionAnalysisProps } from '@/types/game';
 
 export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
   participant,

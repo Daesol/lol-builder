@@ -161,7 +161,7 @@ export interface ParticipantAnalysis {
 }
 
 export interface ChampionAnalysisParticipant {
-  puuid: string;        // This will be the summonerId in our case
+  puuid: string;
   summonerId: string;
   summonerName: string;
   championId: number;

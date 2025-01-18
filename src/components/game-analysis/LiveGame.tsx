@@ -9,11 +9,6 @@ interface LiveGameDisplayProps {
   region: string;
 }
 
-interface ChampionAnalysisProps {
-  participant: ParticipantAnalysis;
-  analysis: ParticipantAnalysis['analysis'];
-}
-
 // Update the default error analysis object
 const defaultAnalysis = {
   matchCount: 0,
