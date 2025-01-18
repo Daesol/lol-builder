@@ -32,8 +32,23 @@ export async function analyzeChampionPerformance(
 
   matches.forEach(match => {
     const participant = match.info.participants.find(p => p.puuid === puuid);
+    
+    // Add detailed logging for debugging
+    console.log('Analyzing match:', {
+      matchId: match.metadata.matchId,
+      foundParticipant: !!participant,
+      participantChampionId: participant?.championId,
+      targetChampionId: championId,
+      isMatchingChampion: participant?.championId === championId
+    });
+
     if (!participant || participant.championId !== championId) {
-      console.log('Participant not found or different champion:', match.metadata.matchId);
+      console.log('Skipping match - wrong champion or participant not found:', {
+        matchId: match.metadata.matchId,
+        reason: !participant ? 'Participant not found' : 'Different champion',
+        expectedChampionId: championId,
+        actualChampionId: participant?.championId
+      });
       return;
     }
 
@@ -58,7 +73,6 @@ export async function analyzeChampionPerformance(
       }
     });
 
-    // Log match stats
     console.log('Processed match:', {
       matchId: match.metadata.matchId,
       championId: participant.championId,
@@ -76,7 +90,12 @@ export async function analyzeChampionPerformance(
 
   performance.commonItems = itemCounts;
 
-  console.log('Analysis complete:', performance);
+  console.log('Analysis complete:', {
+    ...performance,
+    matchesAnalyzed: matches.length,
+    validMatchesFound: performance.matchCount
+  });
+  
   return performance;
 }
 
