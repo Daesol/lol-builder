@@ -93,21 +93,19 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
       setError(null); // Clear any previous errors
       
       try {
-        // Analyze participants sequentially instead of all at once
-        const analyses = [];
-        for (const participant of game.participants) {
-          try {
-            const analysis = await analyzeParticipant(participant);
-            analyses.push(analysis);
-          } catch (error) {
+        // Analyze all participants in parallel
+        const analysisPromises = game.participants.map(participant => 
+          analyzeParticipant(participant).catch(error => {
             console.error(`Error analyzing ${participant.riotIdGameName}:`, error);
-            // Continue with other participants even if one fails
             setError(prev => {
               const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
               return prev ? `${prev}\n${errorMessage}` : errorMessage;
             });
-          }
-        }
+            return null; // Return null for failed analyses
+          })
+        );
+
+        const analyses = (await Promise.all(analysisPromises)).filter(Boolean); // Remove null values
 
         if (analyses.length > 0) {
           setAnalysis({
