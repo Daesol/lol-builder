@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  env: {
-    RIOT_API_KEY: process.env.RIOT_API_KEY,
+module.exports = {
+  reactStrictMode: true,
+  swcMinify: true,
+  experimental: {
+    serverActions: true,
   },
-}
-
-module.exports = nextConfig 
+}; 
