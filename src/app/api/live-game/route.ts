@@ -64,21 +64,11 @@ export async function GET(request: Request) {
         }
       }
 
-      if (!response.ok) {
-        return NextResponse.json(
-          { error: `API request failed: ${response.status}` },
-          { status: response.status }
-        );
-      }
-
       return NextResponse.json(response);
     } catch (error) {
       console.error('API Route - Request failed:', error);
       return NextResponse.json(
-        { 
-          error: error instanceof Error ? error.message : 'Failed to fetch data',
-          timestamp: new Date().toISOString()
-        },
+        { error: error instanceof Error ? error.message : 'Failed to fetch data' },
         { status: 500 }
       );
     }
