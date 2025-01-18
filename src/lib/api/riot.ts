@@ -208,13 +208,14 @@ export class RiotAPI {
       }
 
       return validMatches;
-    } catch (error) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch match history';
       if (onProgress) {
         onProgress({
           total: count,
           current: count,
           completed: true,
-          error: 'Failed to fetch match history',
+          error: errorMessage,
           matchesProcessed: 0,
           matchesSkipped: count
         });
