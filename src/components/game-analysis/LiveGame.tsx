@@ -22,31 +22,65 @@ export const LiveGameDisplay = ({ game, region }: LiveGameProps) => {
         // Analyze all participants
         const participantAnalyses = await Promise.all(
           game.participants.map(async (participant) => {
-            console.log('Analyzing participant:', participant.summonerName);
-            const response = await fetch(
-              `/api/champion-analysis?${new URLSearchParams({
+            try {
+              console.log('Analyzing participant:', participant.summonerName);
+              const response = await fetch(
+                `/api/champion-analysis?${new URLSearchParams({
+                  puuid: participant.puuid,
+                  championId: participant.championId.toString(),
+                  region
+                })}`
+              );
+              
+              if (!response.ok) {
+                console.error(`Analysis failed for ${participant.summonerName}:`, await response.text());
+                return {
+                  puuid: participant.puuid,
+                  summonerName: participant.summonerName,
+                  teamId: participant.teamId,
+                  analysis: {
+                    matchCount: 0,
+                    wins: 0,
+                    totalKills: 0,
+                    totalDeaths: 0,
+                    totalAssists: 0,
+                    totalDamageDealt: 0,
+                    commonItems: {},
+                    commonRunes: { primaryTree: 0, secondaryTree: 0, keystone: 0 }
+                  }
+                };
+              }
+              
+              const performance = await response.json();
+              console.log('Participant analysis complete:', {
+                summonerName: participant.summonerName,
+                performance
+              });
+              
+              return {
                 puuid: participant.puuid,
-                championId: participant.championId.toString(),
-                region
-              })}`
-            );
-            
-            if (!response.ok) {
-              throw new Error(`Analysis failed for ${participant.summonerName}`);
+                summonerName: participant.summonerName,
+                teamId: participant.teamId,
+                analysis: performance
+              };
+            } catch (error) {
+              console.error(`Error analyzing ${participant.summonerName}:`, error);
+              return {
+                puuid: participant.puuid,
+                summonerName: participant.summonerName,
+                teamId: participant.teamId,
+                analysis: {
+                  matchCount: 0,
+                  wins: 0,
+                  totalKills: 0,
+                  totalDeaths: 0,
+                  totalAssists: 0,
+                  totalDamageDealt: 0,
+                  commonItems: {},
+                  commonRunes: { primaryTree: 0, secondaryTree: 0, keystone: 0 }
+                }
+              };
             }
-            
-            const performance = await response.json();
-            console.log('Participant analysis complete:', {
-              summonerName: participant.summonerName,
-              performance
-            });
-            
-            return {
-              puuid: participant.puuid,
-              summonerName: participant.summonerName,
-              teamId: participant.teamId,
-              analysis: performance
-            };
           })
         );
 

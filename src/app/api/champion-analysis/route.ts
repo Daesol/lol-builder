@@ -20,33 +20,74 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get last 20 matches for analysis
-    console.log('Fetching match history...');
-    const matchIds = await riotApi.getMatchHistory(puuid, region, 20);
-    console.log('Match IDs received:', matchIds);
+    try {
+      // Get last 20 matches for analysis
+      console.log('Fetching match history...');
+      const matchIds = await riotApi.getMatchHistory(puuid, region, 20);
+      console.log('Match IDs received:', matchIds);
 
-    console.log('Fetching match details...');
-    const matches = await Promise.all(
-      matchIds.map(id => riotApi.getMatch(id, region))
-    );
-    console.log('Match details received:', matches);
+      if (!matchIds.length) {
+        return NextResponse.json({
+          matchCount: 0,
+          wins: 0,
+          totalKills: 0,
+          totalDeaths: 0,
+          totalAssists: 0,
+          totalDamageDealt: 0,
+          commonItems: {},
+          commonRunes: { primaryTree: 0, secondaryTree: 0, keystone: 0 }
+        });
+      }
 
-    // Filter out null matches
-    const validMatches = matches.filter((match): match is Match => match !== null);
-    console.log('Valid matches:', validMatches.length);
+      console.log('Fetching match details...');
+      const matches = await Promise.all(
+        matchIds.map(async (id) => {
+          try {
+            return await riotApi.getMatch(id, region);
+          } catch (error) {
+            console.error(`Failed to fetch match ${id}:`, error);
+            return null;
+          }
+        })
+      );
+      console.log('Match details received:', matches);
 
-    const analysis = await analyzeChampionPerformance(
-      validMatches,
-      puuid,
-      parseInt(championId, 10)
-    );
+      // Filter out null matches
+      const validMatches = matches.filter((match): match is Match => match !== null);
+      console.log('Valid matches:', validMatches.length);
 
-    console.log('Analysis complete:', analysis);
-    return NextResponse.json(analysis);
+      if (!validMatches.length) {
+        return NextResponse.json({
+          matchCount: 0,
+          wins: 0,
+          totalKills: 0,
+          totalDeaths: 0,
+          totalAssists: 0,
+          totalDamageDealt: 0,
+          commonItems: {},
+          commonRunes: { primaryTree: 0, secondaryTree: 0, keystone: 0 }
+        });
+      }
+
+      const analysis = await analyzeChampionPerformance(
+        validMatches,
+        puuid,
+        parseInt(championId, 10)
+      );
+
+      console.log('Analysis complete:', analysis);
+      return NextResponse.json(analysis);
+    } catch (error) {
+      console.error('Analysis process error:', error);
+      return NextResponse.json(
+        { error: `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error('Champion analysis error:', error);
+    console.error('Route error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Analysis failed' },
+      { error: error instanceof Error ? error.message : 'Route failed' },
       { status: 500 }
     );
   }
