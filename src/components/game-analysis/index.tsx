@@ -17,6 +17,7 @@ export const GameAnalysis = () => {
     console.log('Starting search:', { summonerName, tagLine, region });
     setLoading(true);
     setError(null);
+    setData(null);
 
     try {
       const response = await fetch(
@@ -34,6 +35,10 @@ export const GameAnalysis = () => {
         throw new Error(result.error || 'Failed to fetch data');
       }
 
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
       setData(result);
     } catch (err) {
       console.error('Search failed:', err);
@@ -48,7 +53,7 @@ export const GameAnalysis = () => {
       <SearchBar onSearch={handleSearch} loading={loading} />
 
       {error && (
-        <div className="text-red-500 p-4">
+        <div className="text-red-500 p-4 bg-red-50 rounded">
           Error: {error}
         </div>
       )}
@@ -56,18 +61,25 @@ export const GameAnalysis = () => {
       {loading && (
         <div className="flex justify-center items-center p-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Searching...</span>
+          <span className="ml-2">Searching for player...</span>
         </div>
       )}
 
-      {data?.liveGame && (
-        <LiveGameDisplay game={data.liveGame} region={data.region} />
-      )}
-
-      {!data?.liveGame && !loading && !error && (
-        <div className="text-gray-500 p-4">
-          Player is not in game
-        </div>
+      {data && !loading && !error && (
+        <>
+          {data.liveGame ? (
+            <>
+              <div className="bg-green-50 text-green-700 p-4 rounded">
+                Player found in active game!
+              </div>
+              <LiveGameDisplay game={data.liveGame} region={data.region} />
+            </>
+          ) : (
+            <div className="bg-yellow-50 text-yellow-700 p-4 rounded">
+              Player {data.summoner.name} (Level {data.summoner.summonerLevel}) is not currently in a game
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -10,7 +10,8 @@ export async function GET(request: Request) {
     const tagLine = searchParams.get('tagLine');
     const region = searchParams.get('region') || 'NA1';
 
-    // Validate API key format
+    console.log('Live game API called:', { summoner, tagLine, region });
+
     if (!process.env.RIOT_API_KEY?.startsWith('RGAPI-')) {
       console.error('Invalid API key format:', {
         hasKey: !!process.env.RIOT_API_KEY,
@@ -23,14 +24,6 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('API Route - Received request:', { 
-      summoner, 
-      tagLine, 
-      region,
-      hasApiKey: !!process.env.RIOT_API_KEY,
-      apiKeyLength: process.env.RIOT_API_KEY?.length 
-    });
-
     if (!summoner || !tagLine) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
@@ -39,28 +32,35 @@ export async function GET(request: Request) {
     }
 
     try {
+      console.log('Fetching account data...');
       const account = await riotApi.getAccountData(summoner, tagLine);
-      const summonerData = await riotApi.getSummonerByPUUID(account.puuid, region);
-      const liveGame = await riotApi.getLiveGame(account.puuid, region);
+      console.log('Account found:', account);
 
-      // Initialize response
+      console.log('Fetching summoner data...');
+      const summonerData = await riotApi.getSummonerByPUUID(account.puuid, region);
+      console.log('Summoner data:', summonerData);
+
+      console.log('Checking for live game...');
+      const liveGame = await riotApi.getLiveGame(account.puuid, region);
+      console.log('Live game status:', liveGame ? 'In game' : 'Not in game');
+
       const response: ApiResponse = {
         account,
         summoner: summonerData,
-        liveGame: liveGame,
+        liveGame,
         lastMatch: null,
         region
       };
 
-      // Only fetch match history if needed and handle potential failures gracefully
       if (!liveGame) {
         try {
+          console.log('No live game, fetching recent match...');
           const matchIds = await riotApi.getMatchHistory(account.puuid, region, 1);
           if (matchIds.length > 0) {
             response.lastMatch = await riotApi.getMatch(matchIds[0], region);
           }
         } catch (error) {
-          console.warn('Failed to fetch match history, continuing with partial data:', error);
+          console.warn('Failed to fetch match history:', error);
         }
       }
 
@@ -73,9 +73,9 @@ export async function GET(request: Request) {
       );
     }
   } catch (error) {
-    console.error('API error:', error);
+    console.error('Route error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'An unexpected error occurred' },
+      { error: error instanceof Error ? error.message : 'Route failed' },
       { status: 500 }
     );
   }
