@@ -63,6 +63,7 @@ export class RiotAPI {
   private async fetch<T>(url: string): Promise<T | null> {
     console.log('Making API request:', url);
     
+    // Try each API key until we get a successful response
     for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
       try {
         await rateLimit.waitForAvailability();
@@ -73,7 +74,7 @@ export class RiotAPI {
           }
         });
 
-        // Log response details
+        // Log detailed response info
         console.log('Response details:', {
           status: response.status,
           statusText: response.statusText,
@@ -82,14 +83,10 @@ export class RiotAPI {
           totalKeys: this.apiKeys.length
         });
 
-        if (response.status === 429) { // Rate limit exceeded
+        if (response.status === 429) {
           console.log('Rate limit exceeded, rotating API key...');
           this.rotateApiKey();
           continue;
-        }
-
-        if (response.status === 404) {
-          return null;
         }
 
         if (!response.ok) {
@@ -100,16 +97,21 @@ export class RiotAPI {
         const data = await response.json();
         return data;
       } catch (error) {
+        console.error('Request failed:', {
+          url,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          currentKey: this.currentKeyIndex + 1
+        });
+        
         if (attempt === this.apiKeys.length - 1) {
-          console.error('All API keys failed:', error);
           throw error;
         }
-        console.warn(`Request failed with key ${this.currentKeyIndex + 1}, trying next key:`, error);
+        
         this.rotateApiKey();
       }
     }
     
-    throw new Error('All API keys exhausted');
+    return null;
   }
 
   async getAccountData(gameName: string, tagLine: string): Promise<Account> {

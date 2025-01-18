@@ -1,10 +1,15 @@
+import Image from 'next/image';
 import type { ParticipantAnalysis } from '@/types/game';
 
 interface ChampionAnalysisProps {
   participant: {
     summonerName: string;
+    gameName: string;
+    tagLine: string;
     puuid: string;
     teamId: number;
+    championId: number;
+    championName: string;
   };
   analysis: {
     matchCount: number;
@@ -13,6 +18,7 @@ interface ChampionAnalysisProps {
     totalDeaths: number;
     totalAssists: number;
     totalDamageDealt: number;
+    commonItems: Record<string, number>;
   };
 }
 
@@ -24,14 +30,31 @@ export const ChampionAnalysis = ({ participant, analysis }: ChampionAnalysisProp
   const avgDamage = analysis.matchCount ? Math.round(analysis.totalDamageDealt / analysis.matchCount).toLocaleString() : '0';
   const winRate = analysis.matchCount ? Math.round((analysis.wins / analysis.matchCount) * 100) : 0;
 
+  // Get most common items
+  const commonItems = Object.entries(analysis.commonItems)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([itemId]) => itemId);
+
   return (
-    <div className="mb-4 last:mb-0">
-      <div className="flex justify-between items-center mb-1">
-        <span className="font-semibold">{participant.summonerName}</span>
-        <span className={`text-sm ${winRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
+    <div className="mb-4 last:mb-0 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div className="flex items-center gap-3 mb-2">
+        <Image 
+          src={`/images/champion/${participant.championId}.png`}
+          alt={participant.championName}
+          width={40}
+          height={40}
+          className="rounded-full"
+        />
+        <div>
+          <div className="font-semibold">{participant.gameName}</div>
+          <div className="text-sm text-gray-500">#{participant.tagLine}</div>
+        </div>
+        <span className={`ml-auto text-sm ${winRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
           {winRate}% WR ({analysis.matchCount} games)
         </span>
       </div>
+      
       <div className="text-sm text-gray-600 dark:text-gray-400">
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -44,6 +67,21 @@ export const ChampionAnalysis = ({ participant, analysis }: ChampionAnalysisProp
           </div>
         </div>
       </div>
+
+      {commonItems.length > 0 && (
+        <div className="mt-2 flex gap-1">
+          {commonItems.map((itemId) => (
+            <Image
+              key={itemId}
+              src={`/images/item/${itemId}.png`}
+              alt={`Item ${itemId}`}
+              width={24}
+              height={24}
+              className="rounded"
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

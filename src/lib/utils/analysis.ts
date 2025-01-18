@@ -28,10 +28,12 @@ export async function analyzeChampionPerformance(
     }
   };
 
+  const itemCounts: Record<string, number> = {};
+
   matches.forEach(match => {
     const participant = match.info.participants.find(p => p.puuid === puuid);
-    if (!participant) {
-      console.log('Participant not found in match:', match.metadata.matchId);
+    if (!participant || participant.championId !== championId) {
+      console.log('Participant not found or different champion:', match.metadata.matchId);
       return;
     }
 
@@ -42,18 +44,37 @@ export async function analyzeChampionPerformance(
     performance.totalAssists += participant.assists;
     performance.totalDamageDealt += participant.totalDamageDealtToChampions;
 
+    // Track completed items
+    [
+      participant.item0,
+      participant.item1,
+      participant.item2,
+      participant.item3,
+      participant.item4,
+      participant.item5
+    ].forEach(itemId => {
+      if (itemId && itemId > 0) {
+        itemCounts[itemId] = (itemCounts[itemId] || 0) + 1;
+      }
+    });
+
     // Log match stats
     console.log('Processed match:', {
       matchId: match.metadata.matchId,
+      championId: participant.championId,
       stats: {
         kills: participant.kills,
         deaths: participant.deaths,
         assists: participant.assists,
         damage: participant.totalDamageDealtToChampions,
-        win: participant.win
+        win: participant.win,
+        items: [participant.item0, participant.item1, participant.item2, 
+                participant.item3, participant.item4, participant.item5]
       }
     });
   });
+
+  performance.commonItems = itemCounts;
 
   console.log('Analysis complete:', performance);
   return performance;
@@ -69,8 +90,8 @@ export const analyzeLiveGame = async (
   for (const participant of game.participants) {
     await rateLimit.waitForAvailability();
     try {
-      // Get match history first - now 20 matches
-      const matchIds = await riotApi.getMatchHistory(participant.puuid, region, 20);
+      // Get match history first - now 5 matches
+      const matchIds = await riotApi.getMatchHistory(participant.puuid, region, 5);
       console.log(`Fetched ${matchIds.length} matches for ${participant.summonerName}`);
       
       const matches = await Promise.all(
