@@ -46,4 +46,22 @@ export interface MatchData {
     // Add other match properties as needed
   } | null;
   region: string;
+}
+
+export interface PlayerAnalysis {
+  kda: {
+    kills: number;
+    deaths: number;
+    assists: number;
+    ratio: number;
+  };
+  itemBuilds: {
+    mostCommon: number[];
+    winningBuilds: number[];
+  };
+  runes: {
+    primaryTree: number;
+    secondaryTree: number;
+    keystone: number;
+  };
 } 

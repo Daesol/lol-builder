@@ -4,14 +4,21 @@
 import { useState } from 'react';
 import { MatchAnalysisProgress } from '@/components/MatchAnalysisProgress';
 import type { AnalysisProgressData } from '@/lib/api/riot';
-import type { MatchData } from '@/lib/types';
+import type { MatchData, PlayerAnalysis } from '@/lib/types';
 
 export default function Home() {
   const [progress, setProgress] = useState<AnalysisProgressData | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [matchData, setMatchData] = useState<MatchData | null>(null);
+  const [playerAnalysis, setPlayerAnalysis] = useState<PlayerAnalysis | null>(null);
 
-  const handleSearch = async (summoner: string, tagLine: string, region: string): Promise<void> => {
+  const handleSearch = async (summonerTag: string, region: string): Promise<void> => {
+    const [summoner, tagLine] = summonerTag.split('#');
+    if (!summoner || !tagLine) {
+      alert('Please enter a valid summoner name with tag (e.g., Player#NA1)');
+      return;
+    }
+
     setProgress({
       total: 1,
       current: 0,
@@ -21,10 +28,11 @@ export default function Home() {
     });
     setAnalysisComplete(false);
     setMatchData(null);
+    setPlayerAnalysis(null);
 
     try {
       const response = await fetch(
-        `/api/live-game?summoner=${encodeURIComponent(summoner)}&tagLine=${encodeURIComponent(tagLine)}&region=${encodeURIComponent(region)}`
+        `/api/analyze-game?summoner=${encodeURIComponent(summoner)}&tagLine=${encodeURIComponent(tagLine)}&region=${encodeURIComponent(region)}`
       );
       const data = await response.json() as MatchData & { error?: string };
 
@@ -62,8 +70,7 @@ export default function Home() {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
           handleSearch(
-            formData.get('summoner') as string,
-            formData.get('tagLine') as string,
+            formData.get('summonerTag') as string,
             formData.get('region') as string
           );
         }}
@@ -72,38 +79,28 @@ export default function Home() {
         <div>
           <input
             type="text"
-            name="summoner"
-            placeholder="Summoner Name"
-            className="px-4 py-2 border rounded"
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="text"
-            name="tagLine"
-            placeholder="Tag Line (e.g., NA1)"
-            className="px-4 py-2 border rounded"
+            name="summonerTag"
+            placeholder="Summoner Name#Tag (e.g., Player#NA1)"
+            className="w-full px-4 py-2 border rounded"
             required
           />
         </div>
         <div>
           <select
             name="region"
-            className="px-4 py-2 border rounded"
+            className="w-full px-4 py-2 border rounded"
             defaultValue="NA1"
           >
             <option value="NA1">NA</option>
             <option value="EUW1">EUW</option>
             <option value="KR">KR</option>
-            {/* Add other regions as needed */}
           </select>
         </div>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          Search
+          Analyze Game
         </button>
       </form>
       
@@ -114,21 +111,52 @@ export default function Home() {
       )}
       
       {analysisComplete && matchData && (
-        <div className="mt-8 p-4 bg-white rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Analysis Results</h2>
-          {matchData.liveGame ? (
-            <div className="text-green-600">Player is in game!</div>
-          ) : matchData.lastMatch ? (
-            <div className="text-blue-600">
-              Last match found: {matchData.lastMatch.gameId}
+        <div className="mt-8 space-y-6">
+          <div className="p-4 bg-white rounded-lg shadow">
+            <h2 className="text-xl font-bold mb-4">Game Status</h2>
+            {matchData.liveGame ? (
+              <div className="text-green-600">
+                Live Game Analysis
+                <div className="mt-2 grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-blue-50 rounded">
+                    <h3 className="font-semibold mb-2">Allied Team</h3>
+                    {/* Team analysis will go here */}
+                  </div>
+                  <div className="p-4 bg-red-50 rounded">
+                    <h3 className="font-semibold mb-2">Enemy Team</h3>
+                    {/* Enemy analysis will go here */}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-gray-600">Player is not in game</div>
+            )}
+          </div>
+
+          {playerAnalysis && (
+            <div className="p-4 bg-white rounded-lg shadow">
+              <h2 className="text-xl font-bold mb-4">Performance Analysis</h2>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 bg-gray-50 rounded">
+                  <h3 className="font-semibold mb-2">KDA Analysis</h3>
+                  {/* KDA stats will go here */}
+                </div>
+                <div className="p-4 bg-gray-50 rounded">
+                  <h3 className="font-semibold mb-2">Item Builds</h3>
+                  {/* Item build analysis will go here */}
+                </div>
+                <div className="p-4 bg-gray-50 rounded">
+                  <h3 className="font-semibold mb-2">Runes</h3>
+                  {/* Rune analysis will go here */}
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="text-gray-600">No recent matches found</div>
           )}
-          
-          <pre className="mt-4 p-4 bg-gray-100 rounded overflow-auto">
-            {JSON.stringify(matchData, null, 2)}
-          </pre>
+
+          <div className="p-4 bg-white rounded-lg shadow">
+            <h2 className="text-xl font-bold mb-4">Recommendations</h2>
+            {/* Build recommendations will go here */}
+          </div>
         </div>
       )}
     </main>
