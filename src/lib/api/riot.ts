@@ -1,5 +1,5 @@
 // lib/api/riot.ts
-import { rateLimit } from '../utils/cache';
+import { rateLimit, RateLimit } from '../utils/cache';
 import type { Account, Match, LiveGame, Summoner } from '@/types/game';
 
 export interface AnalysisProgressData {
