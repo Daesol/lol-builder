@@ -2,6 +2,15 @@
 import { rateLimit } from '../utils/cache';
 import type { Account, Match, LiveGame, Summoner } from '@/types/game';
 
+export interface MatchAnalysisProgress {
+  total: number;
+  current: number;
+  completed: boolean;
+  error?: string;
+  matchesProcessed: number;
+  matchesSkipped: number;
+}
+
 export class RiotAPI {
   private apiKey: string;
   private baseUrls: Record<string, string>;
@@ -165,50 +174,100 @@ export class RiotAPI {
     }
   }
 
-  async getMatchHistory(puuid: string, region: string, count: number = 3): Promise<string[]> {
+  async getMatchHistory(
+    puuid: string, 
+    region: string, 
+    count: number = 3,
+    onProgress?: (progress: MatchAnalysisProgress) => void
+  ): Promise<string[]> {
     try {
       const routingRegion = this.getRoutingValue(region);
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
-      const params = { count: count.toString() };
-
-      const result = await this.fetch<string[]>(url, params);
       
-      // Filter out any null or undefined values
-      return (result || []).filter(Boolean);
+      if (onProgress) {
+        onProgress({
+          total: count,
+          current: 0,
+          completed: false,
+          matchesProcessed: 0,
+          matchesSkipped: 0
+        });
+      }
+
+      const result = await this.fetch<string[]>(url, { count: count.toString() });
+      const validMatches = (result || []).filter(Boolean);
+      
+      if (onProgress) {
+        onProgress({
+          total: count,
+          current: count,
+          completed: true,
+          matchesProcessed: validMatches.length,
+          matchesSkipped: count - validMatches.length
+        });
+      }
+
+      return validMatches;
     } catch (error) {
-      console.error('Match History Error:', {
-        error,
-        puuid: puuid.substring(0, 8) + '...',
-        region,
-        timestamp: new Date().toISOString()
-      });
+      if (onProgress) {
+        onProgress({
+          total: count,
+          current: count,
+          completed: true,
+          error: 'Failed to fetch match history',
+          matchesProcessed: 0,
+          matchesSkipped: count
+        });
+      }
       return [];
     }
   }
 
-  async getMatch(matchId: string, region: string): Promise<Match | null> {
+  async getMatch(matchId: string, region: string, onProgress?: (progress: MatchAnalysisProgress) => void): Promise<Match | null> {
     try {
       const routingRegion = this.getRoutingValue(region);
       const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
       
-      console.log('Match API Request:', {
-        matchId,
-        region: routingRegion,
-        timestamp: new Date().toISOString()
-      });
+      if (onProgress) {
+        onProgress({
+          total: 1,
+          current: 0,
+          completed: false,
+          matchesProcessed: 0,
+          matchesSkipped: 0
+        });
+      }
 
-      return await this.fetch<Match>(url);
+      const result = await this.fetch<Match>(url);
+      
+      if (onProgress) {
+        onProgress({
+          total: 1,
+          current: 1,
+          completed: true,
+          matchesProcessed: result ? 1 : 0,
+          matchesSkipped: result ? 0 : 1
+        });
+      }
+
+      return result;
     } catch (error) {
-      // Log specific error details
-      console.error('Match Details Error:', {
-        error,
+      console.warn('Match fetch failed:', {
         matchId,
-        region,
-        errorType: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
-
-      // Return null for any error to prevent breaking the UI
+      
+      if (onProgress) {
+        onProgress({
+          total: 1,
+          current: 1,
+          completed: true,
+          error: 'Failed to fetch match data',
+          matchesProcessed: 0,
+          matchesSkipped: 1
+        });
+      }
+      
       return null;
     }
   }
