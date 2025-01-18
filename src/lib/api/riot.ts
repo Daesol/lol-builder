@@ -188,20 +188,23 @@ export class RiotAPI {
     }
   }
 
+  getMatchUrl(region: string, matchId: string): string {
+    const routingValue = this.getRoutingValue(region);
+    return `${this.baseUrls[routingValue]}/lol/match/v5/matches/${matchId}`;
+  }
+
   async getMatch(matchId: string, region: string): Promise<Match | null> {
     try {
-      const routingValue = this.getRoutingValue(region);
-      const url = `${this.baseUrls[routingValue]}/lol/match/v5/matches/${matchId}`;
+      const url = this.getMatchUrl(region, matchId);
       
       console.log('Match request:', {
         endpoint: 'match-v5',
-        region: routingValue,
+        region: this.getRoutingValue(region),
         matchId,
         url
       });
 
-      const result = await this.fetch<Match>(url);
-      return result;
+      return this.fetch<Match>(url);
     } catch (error) {
       console.error('Match fetch failed:', {
         matchId,
