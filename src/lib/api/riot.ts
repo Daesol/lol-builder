@@ -172,62 +172,50 @@ export class RiotAPI {
 
   async getMatchHistory(puuid: string, region: string, count: number): Promise<string[]> {
     console.log('Fetching match history:', { puuid, region, count });
-    const platform = this.getPlatformFromRegion(region);
-    const url = `${this.baseUrls[platform]}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`;
-    const result = await this.fetch<string[]>(url);
-    console.log('Match history received:', result);
-    return result || [];
-  }
-
-  async getMatch(
-    matchId: string, 
-    region: string, 
-    onProgress?: (progress: AnalysisProgressData) => void
-  ): Promise<Match | null> {
     try {
-      const routingRegion = this.getRoutingValue(region);
-      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/${matchId}`;
+      // Use regional routing for match history
+      const routingValue = this.getRoutingValue(region);
+      const url = `${this.baseUrls[routingValue]}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`;
       
-      if (onProgress) {
-        onProgress({
-          total: 1,
-          current: 0,
-          completed: false,
-          matchesProcessed: 0,
-          matchesSkipped: 0
-        });
-      }
-
-      const result = await this.fetch<Match>(url);
+      console.log('Match history request:', {
+        endpoint: 'match-v5',
+        region: routingValue,
+        url
+      });
       
-      if (onProgress) {
-        onProgress({
-          total: 1,
-          current: 1,
-          completed: true,
-          matchesProcessed: result ? 1 : 0,
-          matchesSkipped: result ? 0 : 1
-        });
+      const result = await this.fetch<string[]>(url);
+      if (!result) {
+        console.log('No match history found');
+        return [];
       }
-
+      
+      console.log(`Found ${result.length} matches`);
       return result;
     } catch (error) {
-      console.warn('Match fetch failed:', {
+      console.error('Failed to fetch match history:', error);
+      return [];
+    }
+  }
+
+  async getMatch(matchId: string, region: string): Promise<Match | null> {
+    try {
+      const routingValue = this.getRoutingValue(region);
+      const url = `${this.baseUrls[routingValue]}/lol/match/v5/matches/${matchId}`;
+      
+      console.log('Match request:', {
+        endpoint: 'match-v5',
+        region: routingValue,
+        matchId,
+        url
+      });
+
+      const result = await this.fetch<Match>(url);
+      return result;
+    } catch (error) {
+      console.error('Match fetch failed:', {
         matchId,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
-      
-      if (onProgress) {
-        onProgress({
-          total: 1,
-          current: 1,
-          completed: true,
-          error: 'Failed to fetch match data',
-          matchesProcessed: 0,
-          matchesSkipped: 1
-        });
-      }
-      
       return null;
     }
   }
