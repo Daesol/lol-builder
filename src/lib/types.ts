@@ -30,7 +30,10 @@ export interface MatchData {
       summonerName: string;
       bot: boolean;
       summonerId: string;
-      gameCustomizationObjects: any[];
+      gameCustomizationObjects: Array<{
+        category: string;
+        content: string;
+      }>;
       perks: {
         perkIds: number[];
         perkStyle: number;
