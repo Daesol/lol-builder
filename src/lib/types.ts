@@ -64,4 +64,31 @@ export interface PlayerAnalysis {
     secondaryTree: number;
     keystone: number;
   };
+}
+
+export interface ParticipantAnalysis {
+  puuid: string;
+  summonerName: string;
+  teamId: number;
+  analysis: ChampionPerformance;
+}
+
+export interface LiveGameAnalysis {
+  blueTeam: ParticipantAnalysis[];
+  redTeam: ParticipantAnalysis[];
+}
+
+export interface ChampionPerformance {
+  matchCount: number;
+  wins: number;
+  totalKills: number;
+  totalDeaths: number;
+  totalAssists: number;
+  totalDamageDealt: number;
+  commonItems: Record<number, { count: number; winCount: number }>;
+  commonRunes: {
+    primaryTree: number;
+    secondaryTree: number;
+    keystone: number;
+  };
 } 
