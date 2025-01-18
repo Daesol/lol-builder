@@ -51,76 +51,45 @@ export class RiotAPI {
     };
   }
 
-  private async fetch<T>(url: string, params: Record<string, string> = {}): Promise<T> {
-    if (!this.apiKey) {
-      throw new Error('Riot API key is not configured');
-    }
-
+  private async fetch<T>(url: string): Promise<T | null> {
+    console.log('Making API request:', url);
     await rateLimit.waitForAvailability();
     
-    // Add API key to params
-    const queryParams = new URLSearchParams({
-      ...params,
-      api_key: this.apiKey
-    });
-    
-    const fullUrl = `${url}${url.includes('?') ? '&' : '?'}${queryParams}`;
-    
     try {
-      const response = await fetch(fullUrl);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        
-        // Enhanced error logging
-        console.error('API Error Details:', {
-          endpoint: url.split('/v5/')[1] || url,
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText,
-          headers: Object.fromEntries(response.headers.entries()),
-          timestamp: new Date().toISOString()
-        });
-
-        switch (response.status) {
-          case 404:
-            return null as T;
-          case 500:
-            console.warn('Riot API server error, data might be unavailable:', {
-              url: url.split('?')[0],
-              timestamp: new Date().toISOString()
-            });
-            return null as T;
-          default:
-            throw new Error(`API request failed (${response.status}): ${errorText}`);
+      const response = await fetch(url, {
+        headers: {
+          'X-Riot-Token': this.apiKey
         }
+      });
+
+      console.log('Response status:', response.status);
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('API response:', data);
       return data;
     } catch (error) {
-      if (error instanceof Error) {
-        // Add request context to error
-        error.message = `${error.message} (URL: ${url.split('?')[0]})`;
-      }
+      console.error('API request error:', error);
       throw error;
     }
   }
 
   async getAccountData(gameName: string, tagLine: string): Promise<Account> {
-    try {
-      // For Riot ID lookups, we need to use the account-v1 endpoint
-      const url = `${this.baseUrls.AMERICAS}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
-      console.log('Looking up account:', { gameName, tagLine });
-      const result = await this.fetch<Account>(url);
-      if (!result) {
-        throw new Error('Account not found');
-      }
-      return result;
-    } catch (error) {
-      console.error('Error in getAccountData:', error);
-      throw error;
+    console.log('Fetching account data:', { gameName, tagLine });
+    const url = `${this.baseUrls['AMERICAS']}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`;
+    const result = await this.fetch<Account>(url);
+    if (!result) {
+      throw new Error('Account not found');
     }
+    console.log('Account data received:', result);
+    return result;
   }
 
   async getSummonerByPUUID(puuid: string, region: string): Promise<Summoner> {
@@ -144,84 +113,26 @@ export class RiotAPI {
   }
 
   async getLiveGame(puuid: string, region: string): Promise<LiveGame | null> {
+    console.log('Fetching live game:', { puuid, region });
     try {
-      // Spectator v5 uses PUUID instead of summoner ID
-      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v5/active-games/by-summoner/${puuid}`;
-      console.log('Spectator API Request:', {
-        endpoint: 'spectator-v5',
-        region: region.toUpperCase(),
-        url: url.split('?')[0]
-      });
-      return await this.fetch<LiveGame>(url);
+      const summoner = await this.getSummonerByPUUID(puuid, region);
+      const url = `${this.baseUrls[region]}/lol/spectator/v4/active-games/by-summoner/${summoner.id}`;
+      const result = await this.fetch<LiveGame>(url);
+      console.log('Live game data:', result);
+      return result;
     } catch (error) {
-      if (error instanceof Error) {
-        // 404 means player not in game (expected)
-        if (error.message.includes('404')) {
-          return null;
-        }
-        // 403 means API key permissions issue
-        if (error.message.includes('403')) {
-          console.error('Spectator API access denied - check API key permissions');
-          return null;
-        }
-        // 400 means wrong parameter type
-        if (error.message.includes('400')) {
-          console.error('Invalid parameter type for Spectator API');
-          return null;
-        }
-      }
-      throw error;
+      console.log('No live game found:', error);
+      return null;
     }
   }
 
-  async getMatchHistory(
-    puuid: string, 
-    region: string, 
-    count: number = 3,
-    onProgress?: (progress: AnalysisProgressData) => void
-  ): Promise<string[]> {
-    try {
-      const routingRegion = this.getRoutingValue(region);
-      const url = `${this.baseUrls[routingRegion]}/lol/match/v5/matches/by-puuid/${puuid}/ids`;
-      
-      if (onProgress) {
-        onProgress({
-          total: count,
-          current: 0,
-          completed: false,
-          matchesProcessed: 0,
-          matchesSkipped: 0
-        });
-      }
-
-      const result = await this.fetch<string[]>(url, { count: count.toString() });
-      const validMatches = (result || []).filter(Boolean);
-      
-      if (onProgress) {
-        onProgress({
-          total: count,
-          current: count,
-          completed: true,
-          matchesProcessed: validMatches.length,
-          matchesSkipped: count - validMatches.length
-        });
-      }
-
-      return validMatches;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch match history';
-      if (onProgress) {
-        onProgress({
-          total: count,
-          current: count,
-          completed: true,
-          error: errorMessage,
-          matchesProcessed: 0,
-          matchesSkipped: count
-        });
-      }
-      return [];
-    }
+  async getMatchHistory(puuid: string, region: string, count: number): Promise<string[]> {
+    console.log('Fetching match history:', { puuid, region, count });
+    const platform = this.getPlatformFromRegion(region);
+    const url = `${this.baseUrls[platform]}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`;
+    const result = await this.fetch<string[]>(url);
+    console.log('Match history received:', result);
+    return result || [];
   }
 
   async getMatch(
@@ -279,6 +190,28 @@ export class RiotAPI {
 
   private getRoutingValue(region: string): string {
     // Updated regional routing mapping
+    switch (region.toUpperCase()) {
+      case 'NA1':
+      case 'BR1':
+      case 'LA1':
+      case 'LA2':
+      case 'OC1':
+        return 'AMERICAS';
+      case 'KR':
+      case 'JP1':
+        return 'ASIA';
+      case 'EUW1':
+      case 'EUN1':
+      case 'TR1':
+      case 'RU':
+        return 'EUROPE';
+      default:
+        return 'AMERICAS';
+    }
+  }
+
+  private getPlatformFromRegion(region: string): string {
+    // Convert region to platform routing value
     switch (region.toUpperCase()) {
       case 'NA1':
       case 'BR1':
