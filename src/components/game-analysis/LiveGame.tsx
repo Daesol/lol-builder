@@ -9,26 +9,6 @@ interface LiveGameDisplayProps {
   region: string;
 }
 
-// Update the default error analysis object
-const defaultAnalysis = {
-  matchCount: 0,
-  championMatchCount: 0,
-  wins: 0,
-  championWins: 0,
-  totalKills: 0,
-  totalDeaths: 0,
-  totalAssists: 0,
-  totalDamageDealt: 0,
-  championStats: {
-    kills: 0,
-    deaths: 0,
-    assists: 0,
-    damageDealt: 0
-  },
-  commonItems: {},
-  commonRunes: { primaryTree: 0, secondaryTree: 0, keystone: 0 }
-};
-
 export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }) => {
   const [analysis, setAnalysis] = useState<LiveGameAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
@@ -104,9 +84,31 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Analyzing participants...</span>
+      <div className="flex flex-col items-center p-8 space-y-4">
+        <div className="flex items-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Analyzing participants...</span>
+        </div>
+        <div className="w-full max-w-md space-y-2">
+          {game.participants.map((participant) => (
+            <div key={participant.puuid} className="flex items-center">
+              <span className="w-48 truncate">
+                {participant.riotIdGameName}#{participant.riotIdTagline}
+              </span>
+              <div className="flex-1 h-2 ml-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-300"
+                  style={{
+                    width: `${progress[participant.puuid] || 0}%`
+                  }}
+                />
+              </div>
+              <span className="ml-2 w-12 text-sm">
+                {Math.round(progress[participant.puuid] || 0)}%
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
