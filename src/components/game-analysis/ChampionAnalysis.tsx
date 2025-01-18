@@ -1,59 +1,49 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/common/ui/card';
-import { Button } from '@/components/common/ui/button';
-import { Loader2 } from 'lucide-react';
-import type { ChampionAnalysisProps, ChampionPerformance } from '@/types/game';
+import type { ParticipantAnalysis } from '@/types/game';
+
+interface ChampionAnalysisProps {
+  participant: {
+    summonerName: string;
+    puuid: string;
+    teamId: number;
+  };
+  analysis: {
+    matchCount: number;
+    wins: number;
+    totalKills: number;
+    totalDeaths: number;
+    totalAssists: number;
+    totalDamageDealt: number;
+  };
+}
 
 export const ChampionAnalysis = ({ participant, analysis }: ChampionAnalysisProps) => {
-  const [performance, setPerformance] = useState<ChampionPerformance | null>(analysis);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const renderStats = () => {
-    if (!performance) return null;
-
-    const winRate = ((performance.wins / performance.matchCount) * 100).toFixed(1);
-    const avgKDA = (
-      (performance.totalKills + performance.totalAssists) /
-      Math.max(performance.totalDeaths, 1)
-    ).toFixed(2);
-
-    return (
-      <div className="grid grid-cols-2 gap-2 mt-2">
-        <div>
-          <p className="text-sm text-gray-400">Win Rate</p>
-          <p className="font-medium">{winRate}%</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-400">KDA</p>
-          <p className="font-medium">{avgKDA}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-400">Matches</p>
-          <p className="font-medium">{performance.matchCount}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-400">Avg Damage</p>
-          <p className="font-medium">
-            {Math.round(performance.totalDamageDealt / performance.matchCount).toLocaleString()}
-          </p>
-        </div>
-      </div>
-    );
-  };
+  // Calculate averages
+  const avgKills = analysis.matchCount ? (analysis.totalKills / analysis.matchCount).toFixed(1) : '0';
+  const avgDeaths = analysis.matchCount ? (analysis.totalDeaths / analysis.matchCount).toFixed(1) : '0';
+  const avgAssists = analysis.matchCount ? (analysis.totalAssists / analysis.matchCount).toFixed(1) : '0';
+  const avgDamage = analysis.matchCount ? Math.round(analysis.totalDamageDealt / analysis.matchCount).toLocaleString() : '0';
+  const winRate = analysis.matchCount ? Math.round((analysis.wins / analysis.matchCount) * 100) : 0;
 
   return (
-    <Card className="mb-4">
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start">
+    <div className="mb-4 last:mb-0">
+      <div className="flex justify-between items-center mb-1">
+        <span className="font-semibold">{participant.summonerName}</span>
+        <span className={`text-sm ${winRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
+          {winRate}% WR ({analysis.matchCount} games)
+        </span>
+      </div>
+      <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="grid grid-cols-2 gap-2">
           <div>
-            <h4 className="font-medium">{participant.summonerName}</h4>
+            <span className="text-green-500">{avgKills}</span> / 
+            <span className="text-red-500">{avgDeaths}</span> / 
+            <span className="text-blue-500">{avgAssists}</span> KDA
           </div>
-          {loading && <Loader2 className="h-5 w-5 animate-spin" />}
+          <div className="text-right">
+            {avgDamage} DMG
+          </div>
         </div>
-        {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
-        {renderStats()}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
