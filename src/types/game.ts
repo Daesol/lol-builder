@@ -140,12 +140,14 @@ export interface ItemData {
 }
 
 export interface ApiResponse {
+  account: Account;
   liveGame: LiveGame | null;
   summoner: {
     name: string;
     summonerLevel: number;
   };
   region: string;
+  lastMatch: Match | null;
 }
 
 export interface ParticipantAnalysis {
