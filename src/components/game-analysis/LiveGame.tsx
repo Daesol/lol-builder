@@ -18,59 +18,103 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
   useEffect(() => {
     const analyzeParticipant = async (participant: LiveGameParticipant) => {
       let sessionId = '';
+      let retryCount = 0;
+      const MAX_RETRIES = 3;
       
       while (true) {
-        const response = await fetch(
-          `/api/champion-analysis?${new URLSearchParams({
-            puuid: participant.puuid,
-            championId: participant.championId.toString(),
-            region,
-            ...(sessionId ? { sessionId } : {})
-          })}`
-        );
+        try {
+          const response = await fetch(
+            `/api/champion-analysis?${new URLSearchParams({
+              puuid: participant.puuid,
+              championId: participant.championId.toString(),
+              region,
+              ...(sessionId ? { sessionId } : {})
+            })}`,
+            {
+              // Add timeout to prevent hanging requests
+              signal: AbortSignal.timeout(15000) // 15 second timeout
+            }
+          );
 
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        const data = await response.json();
-        
-        if (data.sessionId) {
-          sessionId = data.sessionId;
-          setProgress(prev => ({
-            ...prev,
-            [participant.puuid]: (data.processed / data.total) * 100
-          }));
-          
-          if (!data.completed) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            continue;
+          if (!response.ok) {
+            if (response.status === 504) {
+              // If we have a session ID, we can retry with it
+              if (sessionId && retryCount < MAX_RETRIES) {
+                retryCount++;
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                continue;
+              }
+              throw new Error(`Analysis timeout for ${participant.riotIdGameName}. Please try again.`);
+            }
+            throw new Error(await response.text());
           }
-        }
 
-        return {
-          puuid: participant.puuid,
-          gameName: participant.riotIdGameName,
-          tagLine: participant.riotIdTagline,
-          teamId: participant.teamId,
-          championId: participant.championId,
-          championName: participant.championName || '',
-          analysis: data
-        };
+          const data = await response.json();
+          
+          if (data.sessionId) {
+            sessionId = data.sessionId;
+            setProgress(prev => ({
+              ...prev,
+              [participant.puuid]: (data.processed / data.total) * 100
+            }));
+            
+            if (!data.completed) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              continue;
+            }
+          }
+
+          return {
+            puuid: participant.puuid,
+            gameName: participant.riotIdGameName,
+            tagLine: participant.riotIdTagline,
+            teamId: participant.teamId,
+            championId: participant.championId,
+            championName: participant.championName || '',
+            analysis: data
+          };
+        } catch (error) {
+          if (error instanceof Error) {
+            // If we have a session ID, we can retry
+            if (sessionId && retryCount < MAX_RETRIES) {
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              continue;
+            }
+            throw new Error(`Failed to analyze ${participant.riotIdGameName}: ${error.message}`);
+          }
+          throw error;
+        }
       }
     };
 
     const analyzeParticipants = async () => {
       setLoading(true);
+      setError(null); // Clear any previous errors
+      
       try {
-        const analyses = await Promise.all(
-          game.participants.map(analyzeParticipant)
-        );
+        // Analyze participants sequentially instead of all at once
+        const analyses = [];
+        for (const participant of game.participants) {
+          try {
+            const analysis = await analyzeParticipant(participant);
+            analyses.push(analysis);
+          } catch (error) {
+            console.error(`Error analyzing ${participant.riotIdGameName}:`, error);
+            // Continue with other participants even if one fails
+            setError(prev => {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+              return prev ? `${prev}\n${errorMessage}` : errorMessage;
+            });
+          }
+        }
 
-        setAnalysis({
-          blueTeam: analyses.filter(p => p.teamId === 100),
-          redTeam: analyses.filter(p => p.teamId === 200)
-        });
+        if (analyses.length > 0) {
+          setAnalysis({
+            blueTeam: analyses.filter(p => p.teamId === 100),
+            redTeam: analyses.filter(p => p.teamId === 200)
+          });
+        }
       } catch (error) {
         console.error('Analysis failed:', error);
         setError(error instanceof Error ? error.message : 'Analysis failed');
@@ -115,7 +159,7 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
 
   if (error) {
     return (
-      <div className="text-red-500 p-4">
+      <div className="text-red-500 p-4 whitespace-pre-line">
         Error: {error}
       </div>
     );
