@@ -15,10 +15,14 @@ export class RiotAPI {
   private apiKeys: string[];
   private currentKeyIndex: number;
   private baseUrls: Record<string, string>;
+  private rateLimits: Map<string, RateLimit>;  // One rate limiter per API key
   
   constructor(apiKeys: string[]) {
     this.apiKeys = apiKeys.filter(key => key.startsWith('RGAPI-'));
     this.currentKeyIndex = 0;
+    this.rateLimits = new Map(
+      apiKeys.map(key => [key, new RateLimit()])
+    );
     
     if (this.apiKeys.length === 0) {
       throw new Error('No valid API keys provided');
@@ -54,64 +58,43 @@ export class RiotAPI {
     };
   }
 
-  private rotateApiKey() {
-    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
-    console.log(`Rotating to API key ${this.currentKeyIndex + 1}/${this.apiKeys.length}`);
-    return this.apiKeys[this.currentKeyIndex];
-  }
-
   private async fetch<T>(url: string): Promise<T | null> {
-    console.log('Making API request:', url);
-    
     // Try each API key until we get a successful response
     for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
+      const currentKey = this.apiKeys[this.currentKeyIndex];
+      const currentLimiter = this.rateLimits.get(currentKey)!;
+      
       try {
-        await rateLimit.waitForAvailability();
+        await currentLimiter.waitForAvailability();
         
         const response = await fetch(url, {
           headers: {
-            'X-Riot-Token': this.apiKeys[this.currentKeyIndex]
+            'X-Riot-Token': currentKey
           }
         });
 
-        // Log detailed response info
-        console.log('Response details:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          currentKey: this.currentKeyIndex + 1,
-          totalKeys: this.apiKeys.length
-        });
-
-        if (response.status === 429) {
-          console.log('Rate limit exceeded, rotating API key...');
+        if (response.status === 429) {  // Rate limit exceeded
           this.rotateApiKey();
           continue;
         }
 
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API request failed: ${response.status} - ${errorText}`);
+          throw new Error(`API request failed: ${response.status}`);
         }
 
-        const data = await response.json();
-        return data;
+        return response.json();
       } catch (error) {
-        console.error('Request failed:', {
-          url,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          currentKey: this.currentKeyIndex + 1
-        });
-        
         if (attempt === this.apiKeys.length - 1) {
           throw error;
         }
-        
         this.rotateApiKey();
       }
     }
-    
     return null;
+  }
+
+  private rotateApiKey() {
+    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
   }
 
   async getAccountData(gameName: string, tagLine: string): Promise<Account> {

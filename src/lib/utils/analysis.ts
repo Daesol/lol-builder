@@ -1,17 +1,33 @@
 import { riotApi } from '@/lib/api/riot';
-import type { ChampionPerformance, LiveGame, LiveGameAnalysis, Match } from '@/types/game';
-import { rateLimit } from '@/lib/utils/cache';
+import type { ChampionPerformance, Match } from '@/types/game';
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+async function fetchWithRetry<T>(
+  operation: () => Promise<T>,
+  retries = MAX_RETRIES
+): Promise<T | null> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (retries > 0) {
+      console.log(`Retrying operation, ${retries} attempts remaining`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return fetchWithRetry(operation, retries - 1);
+    }
+    console.error('Operation failed after all retries:', error);
+    return null;
+  }
+}
 
 export async function analyzeChampionPerformance(
   matches: Match[],
   puuid: string,
   championId: number
 ): Promise<ChampionPerformance> {
-  console.log('Starting champion performance analysis:', {
-    matchCount: matches.length,
-    puuid,
-    championId
-  });
+  console.log(`Analyzing performance for PUUID: ${puuid}, Champion: ${championId}`);
+  console.log(`Processing ${matches.length} matches`);
 
   const performance: ChampionPerformance = {
     matchCount: 0,
@@ -36,120 +52,57 @@ export async function analyzeChampionPerformance(
     }
   };
 
-  const itemCounts: Record<number, { count: number; winCount: number }> = {};
-
-  matches.forEach(match => {
-    const participant = match.info.participants.find(p => p.puuid === puuid);
-    
-    // Add detailed logging for debugging
-    console.log('Analyzing match:', {
-      matchId: match.metadata.matchId,
-      foundParticipant: !!participant,
-      participantChampionId: participant?.championId,
-      targetChampionId: championId,
-      isMatchingChampion: participant?.championId === championId
-    });
-
-    if (!participant || participant.championId !== championId) {
-      console.log('Skipping match - wrong champion or participant not found:', {
-        matchId: match.metadata.matchId,
-        reason: !participant ? 'Participant not found' : 'Different champion',
-        expectedChampionId: championId,
-        actualChampionId: participant?.championId
-      });
-      return;
-    }
-
-    performance.matchCount++;
-    
-    if (participant.championId === championId) {
-      performance.championMatchCount++;
-      if (participant.win) performance.championWins++;
-      performance.championStats.kills += participant.kills;
-      performance.championStats.deaths += participant.deaths;
-      performance.championStats.assists += participant.assists;
-      performance.championStats.damageDealt += participant.totalDamageDealtToChampions;
-    }
-
-    if (participant.win) performance.wins++;
-    performance.totalKills += participant.kills;
-    performance.totalDeaths += participant.deaths;
-    performance.totalAssists += participant.assists;
-    performance.totalDamageDealt += participant.totalDamageDealtToChampions;
-
-    // Track completed items
-    [
-      participant.item0,
-      participant.item1,
-      participant.item2,
-      participant.item3,
-      participant.item4,
-      participant.item5
-    ].forEach(itemId => {
-      if (itemId && itemId > 0) {
-        if (!itemCounts[itemId]) {
-          itemCounts[itemId] = { count: 0, winCount: 0 };
-        }
-        itemCounts[itemId].count++;
-        if (participant.win) {
-          itemCounts[itemId].winCount++;
-        }
-      }
-    });
-
-    console.log('Processed match:', {
-      matchId: match.metadata.matchId,
-      championId: participant.championId,
-      stats: {
-        kills: participant.kills,
-        deaths: participant.deaths,
-        assists: participant.assists,
-        damage: participant.totalDamageDealtToChampions,
-        win: participant.win,
-        items: [participant.item0, participant.item1, participant.item2, 
-                participant.item3, participant.item4, participant.item5]
-      }
-    });
-  });
-
-  performance.commonItems = itemCounts;
-
-  console.log('Analysis complete:', {
-    ...performance,
-    matchesAnalyzed: matches.length,
-    validMatchesFound: performance.matchCount
-  });
-  
-  return performance;
-}
-
-export const analyzeLiveGame = async (game: LiveGame, region: string): Promise<LiveGameAnalysis> => {
-  const participantAnalyses = [];
-  
-  for (const participant of game.participants) {
+  // Process matches sequentially to avoid rate limit issues
+  for (const match of matches) {
     try {
-      const matchIds = await riotApi.getMatchHistory(participant.puuid, region, 5);
-      const matches = await Promise.all(matchIds.map(id => riotApi.getMatch(id, region)));
-      const validMatches = matches.filter((match): match is Match => match !== null);
-      const analysis = await analyzeChampionPerformance(validMatches, participant.puuid, participant.championId);
+      const participant = match.info.participants.find(p => p.puuid === puuid);
+      
+      if (!participant) {
+        console.warn(`Participant ${puuid} not found in match ${match.metadata.matchId}`);
+        continue;
+      }
 
-      participantAnalyses.push({
-        puuid: participant.puuid,
-        summonerName: participant.summonerName,
-        teamId: participant.teamId,
-        gameName: participant.riotIdGameName,
-        tagLine: participant.riotIdTagline,
-        championId: participant.championId,
-        championName: participant.championName || '',
-        analysis
-      });
+      performance.matchCount++;
+      
+      if (participant.championId === championId) {
+        performance.championMatchCount++;
+        if (participant.win) performance.championWins++;
+        performance.championStats.kills += participant.kills;
+        performance.championStats.deaths += participant.deaths;
+        performance.championStats.assists += participant.assists;
+        performance.championStats.damageDealt += participant.totalDamageDealtToChampions;
+      }
+
+      if (participant.win) performance.wins++;
+      performance.totalKills += participant.kills;
+      performance.totalDeaths += participant.deaths;
+      performance.totalAssists += participant.assists;
+      performance.totalDamageDealt += participant.totalDamageDealtToChampions;
+
+      // Track items
+      for (let i = 0; i <= 6; i++) {
+        const itemId = participant[`item${i}` as keyof typeof participant] as number;
+        if (itemId && itemId > 0) {
+          if (!performance.commonItems[itemId]) {
+            performance.commonItems[itemId] = { count: 0, winCount: 0 };
+          }
+          performance.commonItems[itemId].count++;
+          if (participant.win) {
+            performance.commonItems[itemId].winCount++;
+          }
+        }
+      }
     } catch (error) {
-      console.error(`Error analyzing participant ${participant.summonerName}:`, error);
+      console.error(`Error processing match:`, error);
     }
   }
 
-  return {
-    blueTeam: participantAnalyses.filter(p => p.teamId === 100),
-    redTeam: participantAnalyses.filter(p => p.teamId === 200)
-  };
-};
+  console.log('Analysis complete:', {
+    puuid,
+    championId,
+    matchesProcessed: performance.matchCount,
+    championMatches: performance.championMatchCount
+  });
+
+  return performance;
+}
