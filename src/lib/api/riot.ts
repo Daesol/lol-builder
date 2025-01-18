@@ -116,7 +116,7 @@ export class RiotAPI {
     console.log('Fetching live game:', { puuid, region });
     try {
       const summoner = await this.getSummonerByPUUID(puuid, region);
-      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v4/active-games/by-summoner/${summoner.id}`;
+      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v5/active-games/by-summoner/${summoner.id}`;
       console.log('Spectator API Request:', {
         endpoint: 'spectator-v4',
         region: region.toUpperCase(),
