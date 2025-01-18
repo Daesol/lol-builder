@@ -63,20 +63,23 @@ export const analyzeLiveGame = async (
   game: LiveGame,
   region: string
 ): Promise<LiveGameAnalysis> => {
-  // Process participants in batches to respect rate limits
+  console.log('Starting live game analysis for', game.participants.length, 'participants');
   const participantAnalyses = [];
   
   for (const participant of game.participants) {
     await rateLimit.waitForAvailability();
     try {
-      // Get match history first
-      const matchIds = await riotApi.getMatchHistory(participant.puuid, region, 3);
+      // Get match history first - now 20 matches
+      const matchIds = await riotApi.getMatchHistory(participant.puuid, region, 20);
+      console.log(`Fetched ${matchIds.length} matches for ${participant.summonerName}`);
+      
       const matches = await Promise.all(
         matchIds.map(id => riotApi.getMatch(id, region))
       );
       
       // Filter out null matches
       const validMatches = matches.filter((match): match is Match => match !== null);
+      console.log(`${validMatches.length} valid matches for analysis`);
 
       const analysis = await analyzeChampionPerformance(
         validMatches,

@@ -20,9 +20,9 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get last 3 matches for analysis
+    // Get last 20 matches for analysis
     console.log('Fetching match history...');
-    const matchIds = await riotApi.getMatchHistory(puuid, region, 3);
+    const matchIds = await riotApi.getMatchHistory(puuid, region, 20);
     console.log('Match IDs received:', matchIds);
 
     console.log('Fetching match details...');
