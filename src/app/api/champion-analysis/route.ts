@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { analyzeChampionPerformance } from '@/lib/utils/analysis';
+import { riotApi } from '@/lib/api/riot';
 
 export async function GET(request: Request) {
   try {
@@ -15,9 +16,15 @@ export async function GET(request: Request) {
       );
     }
 
+    // Get last 3 matches for analysis
+    const matchIds = await riotApi.getMatchHistory(puuid, region, 3);
+    const matches = await Promise.all(
+      matchIds.map(id => riotApi.getMatch(id, region))
+    );
+
     const analysis = await analyzeChampionPerformance(
+      matches,
       puuid,
-      region,
       parseInt(championId, 10)
     );
 
