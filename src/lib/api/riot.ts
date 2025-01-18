@@ -116,13 +116,26 @@ export class RiotAPI {
     console.log('Fetching live game:', { puuid, region });
     try {
       const summoner = await this.getSummonerByPUUID(puuid, region);
-      const url = `${this.baseUrls[region]}/lol/spectator/v4/active-games/by-summoner/${summoner.id}`;
+      const url = `${this.baseUrls[region.toUpperCase()]}/lol/spectator/v4/active-games/by-summoner/${summoner.id}`;
+      console.log('Spectator API Request:', {
+        endpoint: 'spectator-v4',
+        region: region.toUpperCase(),
+        summonerId: summoner.id,
+        url: url
+      });
+      
       const result = await this.fetch<LiveGame>(url);
+      
+      if (!result) {
+        console.log('Player not in active game');
+        return null;
+      }
+
       console.log('Live game data:', result);
       return result;
     } catch (error) {
-      console.log('No live game found:', error);
-      return null;
+      console.error('Live game fetch error:', error);
+      throw error;
     }
   }
 
