@@ -73,6 +73,15 @@ export class RiotAPI {
           }
         });
 
+        // Log response details
+        console.log('Response details:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          currentKey: this.currentKeyIndex + 1,
+          totalKeys: this.apiKeys.length
+        });
+
         if (response.status === 429) { // Rate limit exceeded
           console.log('Rate limit exceeded, rotating API key...');
           this.rotateApiKey();
@@ -84,16 +93,18 @@ export class RiotAPI {
         }
 
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
+          const errorText = await response.text();
+          throw new Error(`API request failed: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
         return data;
       } catch (error) {
         if (attempt === this.apiKeys.length - 1) {
-          throw error; // Throw if we've tried all keys
+          console.error('All API keys failed:', error);
+          throw error;
         }
-        console.warn('Request failed, trying next API key:', error);
+        console.warn(`Request failed with key ${this.currentKeyIndex + 1}, trying next key:`, error);
         this.rotateApiKey();
       }
     }
