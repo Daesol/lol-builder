@@ -4,6 +4,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { ddragonApi } from '@/lib/api/ddragon';
 import type { ChampionAnalysisProps } from '@/types/game';
 import { ItemAnalysis } from './ItemAnalysis';
+import { RuneAnalysis } from './RuneAnalysis';
 
 export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
   participant,
@@ -22,6 +23,20 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
     .slice(0, 6)  // Changed from 3 to 6
     .map(([itemId]) => Number(itemId));
 
+  // Get most common runes
+  const commonRunes = {
+    primaryTree: analysis.commonRunes.primaryTree,
+    primaryRunes: Object.entries(analysis.commonRunes.primaryRunes)
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 4)
+      .map(([runeId]) => Number(runeId)),
+    secondaryTree: analysis.commonRunes.secondaryTree,
+    secondaryRunes: Object.entries(analysis.commonRunes.secondaryRunes)
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 2)
+      .map(([runeId]) => Number(runeId))
+  };
+
   return (
     <Card className="transition-all hover:shadow-md">
       <CardContent className="p-4">
@@ -32,13 +47,15 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
                 <Image 
                   src={ddragonApi.getChampionIconUrl(participant.championName)}
                   alt={participant.championName}
-                  width={40}  // Reduced from 48
-                  height={40} // Reduced from 48
+                  width={40}
+                  height={40}
                   className="rounded-lg"
                   unoptimized
                   onError={(e) => {
                     const img = e.target as HTMLImageElement;
-                    img.src = '/images/unknown-champion.png';
+                    if (!img.src.includes('unknown-champion.png')) {  // Prevent infinite loop
+                      img.src = '/images/unknown-champion.png';
+                    }
                   }}
                 />
                 <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-background/80 rounded text-[10px]">
@@ -84,11 +101,23 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
           </div>
         </div>
 
-        {commonItems.length > 0 && (
-          <div className="mt-2">
-            <ItemAnalysis itemIds={commonItems} />
-          </div>
-        )}
+        <div className="flex flex-col gap-4 mt-4">
+          {/* Runes */}
+          {commonRunes.primaryTree > 0 && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Common Runes</p>
+              <RuneAnalysis {...commonRunes} />
+            </div>
+          )}
+
+          {/* Items */}
+          {commonItems.length > 0 && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Common Items</p>
+              <ItemAnalysis itemIds={commonItems} />
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
