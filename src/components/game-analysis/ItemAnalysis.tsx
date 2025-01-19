@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Card, CardContent } from '@/components/common/ui/card';
+import { Card, CardContent } from "@/components/ui/card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ddragonApi } from '@/lib/api/ddragon';
 import type { ItemData } from '@/types/game';
 
@@ -45,7 +47,11 @@ export const ItemAnalysis = ({ itemIds, winRates }: ItemAnalysisProps) => {
   };
 
   if (loading) {
-    return <div className="animate-pulse h-8 bg-gray-700 rounded" />;
+    return <div className="flex gap-2">
+      {[1,2,3].map(i => (
+        <Skeleton key={i} className="w-12 h-12 rounded-md" />
+      ))}
+    </div>;
   }
 
   return (
@@ -57,23 +63,31 @@ export const ItemAnalysis = ({ itemIds, winRates }: ItemAnalysisProps) => {
         const winRate = getWinRate(itemId);
 
         return (
-          <Card key={itemId} className="w-16">
-            <CardContent className="p-2">
-              <div className="relative w-12 h-12">
-                <Image
-                  src={ddragonApi.getItemIconUrl(itemId)}
-                  alt={item.name}
-                  fill
-                  className="object-cover rounded"
-                />
-              </div>
-              {winRate && (
-                <p className="text-xs text-center mt-1 text-gray-400">
-                  {winRate}% WR
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <HoverCard key={itemId}>
+            <HoverCardTrigger asChild>
+              <Card className="w-16 cursor-pointer hover:scale-105 transition-transform">
+                <CardContent className="p-2">
+                  <div className="relative w-12 h-12">
+                    <Image
+                      src={ddragonApi.getItemIconUrl(itemId)}
+                      alt={item.name}
+                      fill
+                      className="object-cover rounded"
+                    />
+                  </div>
+                  {winRate && (
+                    <p className="text-xs text-center mt-1 text-muted-foreground">
+                      {winRate}% WR
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-64">
+              <h4 className="font-semibold">{item.name}</h4>
+              <p className="text-sm text-muted-foreground">{item.description}</p>
+            </HoverCardContent>
+          </HoverCard>
         );
       })}
     </div>

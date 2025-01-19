@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/Card';
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChampionAnalysis } from './ChampionAnalysis';
 import type { LiveGameAnalysis, LiveGameParticipant, LiveGame as LiveGameType, ParticipantAnalysis } from '@/types/game';
 import { Loader2 } from 'lucide-react';
@@ -135,29 +137,27 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
     return (
       <div className="flex flex-col items-center p-8 space-y-6">
         <div className="flex items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="text-lg font-medium">Analyzing match history...</span>
         </div>
-        <div className="w-full max-w-2xl space-y-3">
+        <div className="w-full max-w-2xl space-y-4">
           {game.participants.map((participant) => (
-            <div key={participant.puuid} className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-              <div className="flex items-center gap-3">
-                <span className="font-medium truncate">
-                  {participant.riotIdGameName}
-                </span>
-                <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 transition-all duration-500 ease-out"
-                    style={{
-                      width: `${progress[participant.puuid] || 0}%`
-                    }}
-                  />
+            <Card key={participant.puuid} className="p-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium truncate">
+                    {participant.riotIdGameName}
+                  </span>
+                  <span className="text-sm text-muted-foreground w-14 text-right">
+                    {Math.round(progress[participant.puuid] || 0)}%
+                  </span>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400 w-14 text-right">
-                  {Math.round(progress[participant.puuid] || 0)}%
-                </span>
+                <Progress 
+                  value={progress[participant.puuid] || 0} 
+                  className="h-2"
+                />
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </div>
@@ -166,44 +166,44 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
 
   if (error) {
     return (
-      <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg">
-        <div className="text-red-600 dark:text-red-400 whitespace-pre-line">
+      <Alert variant="destructive">
+        <AlertDescription className="whitespace-pre-line">
           {error}
-        </div>
-      </div>
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card className="overflow-hidden border-t-4 border-blue-500">
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-blue-500 mb-4">Blue Team</h3>
-          <div className="space-y-3">
-            {analysis?.blueTeam.map(participant => (
-              <ChampionAnalysis
-                key={participant.puuid}
-                participant={participant}
-                analysis={participant.analysis}
-              />
-            ))}
-          </div>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-blue-500">Blue Team</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {analysis?.blueTeam.map(participant => (
+            <ChampionAnalysis
+              key={participant.puuid}
+              participant={participant}
+              analysis={participant.analysis}
+            />
+          ))}
+        </CardContent>
       </Card>
 
-      <Card className="overflow-hidden border-t-4 border-red-500">
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-red-500 mb-4">Red Team</h3>
-          <div className="space-y-3">
-            {analysis?.redTeam.map(participant => (
-              <ChampionAnalysis
-                key={participant.puuid}
-                participant={participant}
-                analysis={participant.analysis}
-              />
-            ))}
-          </div>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-red-500">Red Team</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {analysis?.redTeam.map(participant => (
+            <ChampionAnalysis
+              key={participant.puuid}
+              participant={participant}
+              analysis={participant.analysis}
+            />
+          ))}
+        </CardContent>
       </Card>
     </div>
   );

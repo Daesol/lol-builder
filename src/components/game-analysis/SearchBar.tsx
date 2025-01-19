@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Button } from '@/components/common/ui/button';
-import { Input } from '@/components/common/ui/input';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/common/ui/select';
+} from "@/components/ui/select";
+import { REGIONS } from '@/constants/game';
+import { Loader2 } from 'lucide-react';
 
 interface SearchBarProps {
   onSearch: (summonerName: string, tagLine: string, region: string) => void;
@@ -21,13 +23,8 @@ export const SearchBar = ({ onSearch, loading }: SearchBarProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Split the input into summoner name and tag
     const [summonerName, tagLine] = input.split('#');
-    
-    // If no tag is provided, use the region as tag
     const finalTagLine = tagLine || region;
-    
-    // Remove any special characters from summoner name
     const cleanSummonerName = summonerName.trim();
     
     onSearch(cleanSummonerName, finalTagLine, region);
@@ -40,6 +37,7 @@ export const SearchBar = ({ onSearch, loading }: SearchBarProps) => {
           placeholder="Summoner Name (e.g. name#tag)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          className="col-span-2"
         />
         
         <Select value={region} onValueChange={setRegion}>
@@ -47,14 +45,23 @@ export const SearchBar = ({ onSearch, loading }: SearchBarProps) => {
             <SelectValue placeholder="Select region" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="NA1">NA</SelectItem>
-            <SelectItem value="EUW1">EUW</SelectItem>
-            <SelectItem value="KR">KR</SelectItem>
+            {Object.entries(REGIONS).map(([key, name]) => (
+              <SelectItem key={key} value={key}>
+                {name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Searching...' : 'Search'}
+        <Button type="submit" disabled={loading} className="md:col-span-3">
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Searching...
+            </>
+          ) : (
+            'Search'
+          )}
         </Button>
       </div>
     </form>

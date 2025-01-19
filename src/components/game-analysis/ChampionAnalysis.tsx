@@ -1,6 +1,9 @@
 import Image from 'next/image';
+import { Card, CardContent } from "@/components/ui/card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ddragonApi } from '@/lib/api/ddragon';
 import type { ChampionAnalysisProps } from '@/types/game';
+import { ItemAnalysis } from './ItemAnalysis';
 
 export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
   participant,
@@ -20,39 +23,49 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
     .map(([itemId]) => Number(itemId));
 
   return (
-    <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm transition-all hover:shadow-md">
-      <div className="p-4">
+    <Card className="transition-all hover:shadow-md">
+      <CardContent className="p-4">
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <Image 
-              src={ddragonApi.getChampionIconUrl(participant.championName)}
-              alt={participant.championName}
-              width={48}
-              height={48}
-              className="rounded-lg"
-              unoptimized
-              onError={(e) => {
-                const img = e.target as HTMLImageElement;
-                img.src = '/images/unknown-champion.png';
-              }}
-            />
-            <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-gray-900/80 rounded text-xs text-white">
-              {analysis.matchCount}
-            </div>
-          </div>
-          
+          <HoverCard>
+            <HoverCardTrigger asChild>
+              <div className="relative cursor-pointer">
+                <Image 
+                  src={ddragonApi.getChampionIconUrl(participant.championName)}
+                  alt={participant.championName}
+                  width={48}
+                  height={48}
+                  className="rounded-lg"
+                  unoptimized
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    img.src = '/images/unknown-champion.png';
+                  }}
+                />
+                <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-background/80 rounded text-xs">
+                  {analysis.matchCount}
+                </div>
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent>
+              <h4 className="font-semibold">{participant.championName}</h4>
+              <p className="text-sm text-muted-foreground">
+                {analysis.matchCount} games analyzed
+              </p>
+            </HoverCardContent>
+          </HoverCard>
+
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">{participant.gameName}</div>
-                <div className="text-sm text-gray-500">#{participant.tagLine}</div>
+                <div className="text-sm text-muted-foreground">#{participant.tagLine}</div>
               </div>
               <div className={`text-sm font-medium ${winRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
                 {winRate}% WR
               </div>
             </div>
             
-            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <div className="mt-2 text-sm text-muted-foreground">
               <div className="flex justify-between items-center">
                 <div>
                   <span className="text-green-500 font-medium">{avgKills}</span>
@@ -70,21 +83,9 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
         </div>
 
         {commonItems.length > 0 && (
-          <div className="mt-3 flex gap-1.5">
-            {commonItems.map((itemId) => (
-              <Image
-                key={itemId}
-                src={ddragonApi.getItemIconUrl(itemId)}
-                alt={`Item ${itemId}`}
-                width={28}
-                height={28}
-                className="rounded-md hover:scale-110 transition-transform"
-                unoptimized
-              />
-            ))}
-          </div>
+          <ItemAnalysis itemIds={commonItems} />
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

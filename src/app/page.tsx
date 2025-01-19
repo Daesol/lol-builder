@@ -2,8 +2,6 @@
 'use client';
 
 import { GameAnalysis } from '@/components/game-analysis';
-import { MatchAnalysisProgress } from '@/components/MatchAnalysisProgress';
-import type { AnalysisProgressData } from '@/lib/api/riot';
 
 export default function Home() {
   return (

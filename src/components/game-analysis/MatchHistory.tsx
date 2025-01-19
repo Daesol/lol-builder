@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@/components/common/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ItemAnalysis } from './ItemAnalysis';
 import type { ChampionPerformance } from '@/types/game';
 
@@ -9,18 +9,19 @@ interface MatchHistoryProps {
 export const MatchHistory = ({ performance }: MatchHistoryProps) => {
   return (
     <Card>
-      <CardContent className="p-4">
-        <h3 className="text-lg font-semibold mb-4">Performance Summary</h3>
-        
+      <CardHeader>
+        <CardTitle>Performance Summary</CardTitle>
+      </CardHeader>
+      <CardContent>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="text-gray-400">Win Rate</p>
+            <p className="text-muted-foreground">Win Rate</p>
             <p className="font-medium">
               {((performance.wins / performance.matchCount) * 100).toFixed(1)}%
             </p>
           </div>
           <div>
-            <p className="text-gray-400">KDA</p>
+            <p className="text-muted-foreground">KDA</p>
             <p className="font-medium">
               {((performance.totalKills + performance.totalAssists) / 
                 Math.max(performance.totalDeaths, 1)).toFixed(2)}

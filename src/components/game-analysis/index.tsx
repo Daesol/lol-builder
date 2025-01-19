@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/common/ui/card';
-import { Alert, AlertDescription } from '@/components/common/ui/alert';
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchBar } from './SearchBar';
 import { LiveGameDisplay } from './LiveGame';
 import type { ApiResponse } from '@/types/game';
@@ -11,14 +14,12 @@ import { Loader2 } from 'lucide-react';
 export const GameAnalysis = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<ApiResponse | null>(null);
+  const [gameData, setGameData] = useState<ApiResponse | null>(null);
 
   const handleSearch = async (summonerName: string, tagLine: string, region: string) => {
-    console.log('Starting search:', { summonerName, tagLine, region });
     setLoading(true);
     setError(null);
-    setData(null);
-
+    
     try {
       const response = await fetch(
         `/api/live-game?${new URLSearchParams({
@@ -27,22 +28,20 @@ export const GameAnalysis = () => {
           region
         })}`
       );
-      
-      const result = await response.json();
-      console.log('Search result:', result);
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch data');
+        throw new Error(await response.text());
       }
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
+      const data = await response.json();
+      setGameData(data);
 
-      setData(result);
-    } catch (err) {
-      console.error('Search failed:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      if (!data.liveGame) {
+        setError(`${summonerName} is not currently in a game`);
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      setError(error instanceof Error ? error.message : 'Search failed');
     } finally {
       setLoading(false);
     }
@@ -50,36 +49,29 @@ export const GameAnalysis = () => {
 
   return (
     <div className="space-y-6">
-      <SearchBar onSearch={handleSearch} loading={loading} />
-
-      {error && (
-        <div className="text-red-500 p-4 bg-red-50 rounded">
-          Error: {error}
-        </div>
-      )}
+      <Card>
+        <CardContent className="pt-6">
+          <SearchBar onSearch={handleSearch} loading={loading} />
+        </CardContent>
+      </Card>
 
       {loading && (
-        <div className="flex justify-center items-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Searching for player...</span>
+        <div className="flex justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
 
-      {data && !loading && !error && (
-        <>
-          {data.liveGame ? (
-            <>
-              <div className="bg-green-50 text-green-700 p-4 rounded">
-                Player found in active game!
-              </div>
-              <LiveGameDisplay game={data.liveGame} region={data.region} />
-            </>
-          ) : (
-            <div className="bg-yellow-50 text-yellow-700 p-4 rounded">
-              Player {data.summoner.name} (Level {data.summoner.summonerLevel}) is not currently in a game
-            </div>
-          )}
-        </>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {gameData?.liveGame && (
+        <LiveGameDisplay 
+          game={gameData.liveGame} 
+          region={gameData.region} 
+        />
       )}
     </div>
   );
