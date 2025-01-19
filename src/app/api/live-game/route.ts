@@ -33,7 +33,11 @@ export async function GET(request: Request) {
 
     try {
       console.log('Fetching account data...');
-      const account = await riotApi.getAccountData(summoner, tagLine);
+      const account = await riotApi.getAccountData({ 
+        gameName: summoner, 
+        tagLine, 
+        region 
+      });
       console.log('Account found:', account);
 
       console.log('Fetching summoner data...');

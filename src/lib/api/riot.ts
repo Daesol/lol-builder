@@ -145,11 +145,15 @@ export class RiotAPI {
     gameName: string; 
     tagLine: string;
     region: string;
-  }) {
+  }): Promise<Account> {
     const routing = ROUTING[region as keyof typeof ROUTING] || 'americas';
     const url = `https://${routing}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`;
     
-    return this.fetch(url);
+    const result = await this.fetch<Account>(url);
+    if (!result) {
+      throw new Error('Account not found');
+    }
+    return result;
   }
 
   async getSummonerByPUUID(puuid: string, region: string): Promise<Summoner> {
