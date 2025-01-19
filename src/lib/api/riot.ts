@@ -285,27 +285,26 @@ export class RiotAPI {
   // Add a method to handle sequential requests with rate limiting
   async fetchSequential<T>(urls: string[]): Promise<(T | null)[]> {
     const results: (T | null)[] = [];
-    const batchSize = 3; // Process in smaller batches
+    const batchSize = 2;  // Reduce batch size from 3 to 2
     
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       console.log(`Processing batch ${i / batchSize + 1}/${Math.ceil(urls.length / batchSize)}`);
       
       try {
-        const batchResults = await Promise.all(
-          batch.map(async url => {
-            try {
-              return await this.fetch<T>(url);
-            } catch (error) {
-              console.error('Batch request failed:', {
-                url: url.split('?')[0],
-                error: error instanceof Error ? error.message : 'Unknown error'
-              });
-              return null;
-            }
-          })
-        );
-        results.push(...batchResults);
+        // Process batch sequentially instead of in parallel
+        for (const url of batch) {
+          try {
+            const result = await this.fetch<T>(url);
+            results.push(result);
+          } catch (error) {
+            console.error('Request failed:', {
+              url: url.split('?')[0],
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
+            results.push(null);
+          }
+        }
       } catch (error) {
         console.error('Batch processing failed:', error);
         results.push(...new Array(batch.length).fill(null));

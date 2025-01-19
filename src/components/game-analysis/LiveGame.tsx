@@ -133,28 +133,30 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center p-8 space-y-4">
-        <div className="flex items-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Analyzing participants...</span>
+      <div className="flex flex-col items-center p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <span className="text-lg font-medium">Analyzing match history...</span>
         </div>
-        <div className="w-full max-w-md space-y-2">
+        <div className="w-full max-w-2xl space-y-3">
           {game.participants.map((participant) => (
-            <div key={participant.puuid} className="flex items-center">
-              <span className="w-48 truncate">
-                {participant.riotIdGameName}#{participant.riotIdTagline}
-              </span>
-              <div className="flex-1 h-2 ml-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 transition-all duration-300"
-                  style={{
-                    width: `${progress[participant.puuid] || 0}%`
-                  }}
-                />
+            <div key={participant.puuid} className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="font-medium truncate">
+                  {participant.riotIdGameName}
+                </span>
+                <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-500 ease-out"
+                    style={{
+                      width: `${progress[participant.puuid] || 0}%`
+                    }}
+                  />
+                </div>
+                <span className="text-sm text-gray-500 dark:text-gray-400 w-14 text-right">
+                  {Math.round(progress[participant.puuid] || 0)}%
+                </span>
               </div>
-              <span className="ml-2 w-12 text-sm">
-                {Math.round(progress[participant.puuid] || 0)}%
-              </span>
             </div>
           ))}
         </div>
@@ -164,39 +166,43 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
 
   if (error) {
     return (
-      <div className="text-red-500 p-4 whitespace-pre-line">
-        Error: {error}
+      <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg">
+        <div className="text-red-600 dark:text-red-400 whitespace-pre-line">
+          {error}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Blue Team */}
-      <Card>
+      <Card className="overflow-hidden border-t-4 border-blue-500">
         <div className="p-4">
-          <h3 className="text-blue-400 font-bold mb-4">Blue Team</h3>
-          {analysis?.blueTeam.map(participant => (
-            <ChampionAnalysis
-              key={participant.puuid}
-              participant={participant}
-              analysis={participant.analysis}
-            />
-          ))}
+          <h3 className="text-lg font-semibold text-blue-500 mb-4">Blue Team</h3>
+          <div className="space-y-3">
+            {analysis?.blueTeam.map(participant => (
+              <ChampionAnalysis
+                key={participant.puuid}
+                participant={participant}
+                analysis={participant.analysis}
+              />
+            ))}
+          </div>
         </div>
       </Card>
 
-      {/* Red Team */}
-      <Card>
+      <Card className="overflow-hidden border-t-4 border-red-500">
         <div className="p-4">
-          <h3 className="text-red-400 font-bold mb-4">Red Team</h3>
-          {analysis?.redTeam.map(participant => (
-            <ChampionAnalysis
-              key={participant.puuid}
-              participant={participant}
-              analysis={participant.analysis}
-            />
-          ))}
+          <h3 className="text-lg font-semibold text-red-500 mb-4">Red Team</h3>
+          <div className="space-y-3">
+            {analysis?.redTeam.map(participant => (
+              <ChampionAnalysis
+                key={participant.puuid}
+                participant={participant}
+                analysis={participant.analysis}
+              />
+            ))}
+          </div>
         </div>
       </Card>
     </div>

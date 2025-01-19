@@ -20,57 +20,71 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
     .map(([itemId]) => Number(itemId));
 
   return (
-    <div className="mb-4 last:mb-0 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      <div className="flex items-center gap-3 mb-2">
-        <Image 
-          src={ddragonApi.getChampionIconUrl(participant.championName)}
-          alt={participant.championName}
-          width={40}
-          height={40}
-          className="rounded-full"
-          unoptimized
-          onError={(e) => {
-            const img = e.target as HTMLImageElement;
-            img.src = '/images/unknown-champion.png'; // Add a fallback image
-          }}
-        />
-        <div>
-          <div className="font-semibold">{participant.gameName}</div>
-          <div className="text-sm text-gray-500">#{participant.tagLine}</div>
-        </div>
-        <span className={`ml-auto text-sm ${winRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
-          {winRate}% WR ({analysis.matchCount} games)
-        </span>
-      </div>
-      
-      <div className="text-sm text-gray-600 dark:text-gray-400">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <span className="text-green-500">{avgKills}</span> / 
-            <span className="text-red-500">{avgDeaths}</span> / 
-            <span className="text-blue-500">{avgAssists}</span> KDA
-          </div>
-          <div className="text-right">
-            {avgDamage} DMG
-          </div>
-        </div>
-      </div>
-
-      {commonItems.length > 0 && (
-        <div className="mt-2 flex gap-1">
-          {commonItems.map((itemId) => (
-            <Image
-              key={itemId}
-              src={ddragonApi.getItemIconUrl(itemId)}
-              alt={`Item ${itemId}`}
-              width={24}
-              height={24}
-              className="rounded"
+    <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm transition-all hover:shadow-md">
+      <div className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Image 
+              src={ddragonApi.getChampionIconUrl(participant.championName)}
+              alt={participant.championName}
+              width={48}
+              height={48}
+              className="rounded-lg"
               unoptimized
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.src = '/images/unknown-champion.png';
+              }}
             />
-          ))}
+            <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-gray-900/80 rounded text-xs text-white">
+              {analysis.matchCount}
+            </div>
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">{participant.gameName}</div>
+                <div className="text-sm text-gray-500">#{participant.tagLine}</div>
+              </div>
+              <div className={`text-sm font-medium ${winRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
+                {winRate}% WR
+              </div>
+            </div>
+            
+            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-green-500 font-medium">{avgKills}</span>
+                  <span className="mx-1">/</span>
+                  <span className="text-red-500 font-medium">{avgDeaths}</span>
+                  <span className="mx-1">/</span>
+                  <span className="text-blue-500 font-medium">{avgAssists}</span>
+                </div>
+                <div className="text-sm">
+                  {avgDamage} DMG
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+
+        {commonItems.length > 0 && (
+          <div className="mt-3 flex gap-1.5">
+            {commonItems.map((itemId) => (
+              <Image
+                key={itemId}
+                src={ddragonApi.getItemIconUrl(itemId)}
+                alt={`Item ${itemId}`}
+                width={28}
+                height={28}
+                className="rounded-md hover:scale-110 transition-transform"
+                unoptimized
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
