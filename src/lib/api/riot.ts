@@ -11,6 +11,20 @@ export interface AnalysisProgressData {
   matchesSkipped: number;
 }
 
+const ROUTING = {
+  'NA1': 'americas',
+  'BR1': 'americas',
+  'LA1': 'americas',
+  'LA2': 'americas',
+  'KR': 'asia',
+  'JP1': 'asia',
+  'EUW1': 'europe',
+  'EUN1': 'europe',
+  'TR1': 'europe',
+  'RU': 'europe',
+  // ... add other regions as needed
+} as const;
+
 export class RiotAPI {
   private apiKeys: string[];
   private currentKeyIndex: number;
@@ -127,15 +141,15 @@ export class RiotAPI {
     this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
   }
 
-  async getAccountData(gameName: string, tagLine: string): Promise<Account> {
-    console.log('Fetching account data:', { gameName, tagLine });
-    const url = `${this.baseUrls['AMERICAS']}/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`;
-    const result = await this.fetch<Account>(url);
-    if (!result) {
-      throw new Error('Account not found');
-    }
-    console.log('Account data received:', result);
-    return result;
+  async getAccountData({ gameName, tagLine, region }: { 
+    gameName: string; 
+    tagLine: string;
+    region: string;
+  }) {
+    const routing = ROUTING[region as keyof typeof ROUTING] || 'americas';
+    const url = `https://${routing}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${gameName}/${tagLine}`;
+    
+    return this.fetch(url);
   }
 
   async getSummonerByPUUID(puuid: string, region: string): Promise<Summoner> {
