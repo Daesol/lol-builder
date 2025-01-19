@@ -1,5 +1,8 @@
 import type { ItemData } from '@/types/game';
 
+const DDRAGON_BASE_URL = 'https://ddragon.leagueoflegends.com';
+const FALLBACK_VERSION = '15.1.1';
+
 export class DataDragonAPI {
   private version: string;
   private baseUrl: string;
@@ -7,13 +10,27 @@ export class DataDragonAPI {
     items?: Record<number, ItemData>;
   } = {};
 
-  constructor(version = '15.1.1') {
-    this.version = version;
-    this.baseUrl = 'https://ddragon.leagueoflegends.com';
+  constructor(version?: string) {
+    this.version = version || FALLBACK_VERSION;
+    this.baseUrl = `${DDRAGON_BASE_URL}/cdn`;
+  }
+
+  async init() {
+    if (!this.version || this.version === FALLBACK_VERSION) {
+      try {
+        const response = await fetch(`${DDRAGON_BASE_URL}/api/versions.json`);
+        const versions = await response.json();
+        this.version = versions[0]; // Latest version
+      } catch (error) {
+        console.warn('Failed to fetch DDragon version, using fallback:', error);
+        this.version = FALLBACK_VERSION;
+      }
+    }
+    return this;
   }
 
   getBaseUrl() {
-    return `${this.baseUrl}/cdn/${this.version}`;
+    return `${this.baseUrl}/${this.version}`;
   }
 
   getChampionIconUrl(championName: string) {
@@ -44,4 +61,6 @@ export class DataDragonAPI {
   }
 }
 
+// Create and initialize the API
 export const ddragonApi = new DataDragonAPI();
+ddragonApi.init().catch(console.error);
