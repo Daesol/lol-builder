@@ -3,6 +3,7 @@ import { Card } from '@/components/common/ui/card';
 import { ChampionAnalysis } from './ChampionAnalysis';
 import type { LiveGameAnalysis, LiveGameParticipant, LiveGame as LiveGameType, ParticipantAnalysis } from '@/types/game';
 import { Loader2 } from 'lucide-react';
+import { initChampionMapping, getChampionName } from '@/lib/utils/champion';
 
 interface LiveGameDisplayProps {
   game: LiveGameType;
@@ -14,6 +15,10 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    initChampionMapping();
+  }, []);
 
   useEffect(() => {
     const analyzeParticipant = async (participant: LiveGameParticipant) => {
@@ -70,7 +75,7 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
             tagLine: participant.riotIdTagline,
             teamId: participant.teamId,
             championId: participant.championId,
-            championName: participant.championName || '',
+            championName: getChampionName(participant.championId),
             analysis: data
           };
         } catch (error) {

@@ -29,6 +29,10 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
           height={40}
           className="rounded-full"
           unoptimized
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            img.src = '/images/unknown-champion.png'; // Add a fallback image
+          }}
         />
         <div>
           <div className="font-semibold">{participant.gameName}</div>

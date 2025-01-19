@@ -7,12 +7,15 @@ export class DataDragonAPI {
     items?: Record<number, ItemData>;
   } = {};
 
-  constructor(version = '14.4.1') {
+  constructor(version = '15.1.1') {
     this.version = version;
     this.baseUrl = 'https://ddragon.leagueoflegends.com';
   }
 
   getChampionIconUrl(championName: string): string {
+    if (!championName || championName === 'Unknown') {
+      return '/images/unknown-champion.png'; // Fallback image path
+    }
     const formattedName = championName
       .replace(/[^a-zA-Z]/g, '')
       .toLowerCase();
@@ -38,6 +41,12 @@ export class DataDragonAPI {
     }
 
     return this.cache.items?.[itemId] || null;
+  }
+
+  async getChampions() {
+    const response = await fetch(`${this.baseUrl}/data/en_US/champion.json`);
+    const data = await response.json();
+    return data.data;
   }
 }
 
