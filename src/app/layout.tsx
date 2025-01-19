@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import '@/app/globals.css'
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,9 +20,6 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen bg-gray-950 text-gray-100`}>
         <main className="container mx-auto p-4">
           <nav className="py-4">
-            <h1 className="text-3xl font-bold text-center text-blue-400">
-              LoL Item Builder
-            </h1>
           </nav>
           {children}
         </main>

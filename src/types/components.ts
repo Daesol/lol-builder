@@ -1,6 +1,6 @@
 // src/types/components.ts
 
-import { LiveGame, Summoner } from './riot';
+import { LiveGame, Summoner } from './game';
 
 export interface ItemRecommendation {
   id: number;

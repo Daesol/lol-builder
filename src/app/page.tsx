@@ -1,12 +1,13 @@
 // src/app/page.tsx
-import ItemRecommender from '@/components/ItemRecommender';
+'use client';
+
+import { GameAnalysis } from '@/components/game-analysis';
 
 export default function Home() {
   return (
-    <main className="min-h-screen py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <ItemRecommender />
-      </div>
+    <main className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">LoL Match Analysis</h1>
+      <GameAnalysis />
     </main>
   );
 }

@@ -1,6 +1,8 @@
 // app/api/champion-performance/route.ts
 import { NextResponse } from 'next/server';
-import { analyzeChampionPerformance } from '@/lib/riotApiClient';
+import { analyzeChampionPerformance } from '@/lib/utils/analysis';
+import { riotApi } from '@/lib/api/riot';
+import type { Match } from '@/types/game';
 
 export async function GET(request: Request) {
   try {
@@ -8,13 +10,11 @@ export async function GET(request: Request) {
     const puuid = searchParams.get('puuid');
     const championId = searchParams.get('championId');
     const region = searchParams.get('region') || 'NA1';
-    const summonerId = searchParams.get('summonerId');
 
     console.log('Champion Performance API called:', {
       puuid,
       championId,
       region,
-      summonerId
     });
 
     if (!puuid || !championId) {
@@ -25,11 +25,19 @@ export async function GET(request: Request) {
     }
 
     try {
-      // For both live game and last match analysis
       console.log('Starting champion analysis...');
+      // Get match history first
+      const matchIds = await riotApi.getMatchHistory(puuid, region, 3);
+      const matches = await Promise.all(
+        matchIds.map(id => riotApi.getMatch(id, region))
+      );
+      
+      // Filter out null matches
+      const validMatches = matches.filter((match): match is Match => match !== null);
+
       const analysis = await analyzeChampionPerformance(
+        validMatches,
         puuid,
-        region,
         parseInt(championId, 10)
       );
       console.log('Analysis completed:', analysis);
