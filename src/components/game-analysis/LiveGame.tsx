@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card } from '@/components/common/ui/card';
+import { Card } from '@/components/ui/Card';
 import { ChampionAnalysis } from './ChampionAnalysis';
 import type { LiveGameAnalysis, LiveGameParticipant, LiveGame as LiveGameType, ParticipantAnalysis } from '@/types/game';
 import { Loader2 } from 'lucide-react';
