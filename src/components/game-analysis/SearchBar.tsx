@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { REGIONS } from '@/constants/game';
+import { REGIONS, REGION_FLAGS } from '@/constants/game';
 import { Loader2 } from 'lucide-react';
 
 interface SearchBarProps {
@@ -20,50 +20,47 @@ export const SearchBar = ({ onSearch, loading }: SearchBarProps) => {
   const [input, setInput] = useState('');
   const [region, setRegion] = useState('NA1');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSearch = () => {
     const [summonerName, tagLine] = input.split('#');
-    const finalTagLine = tagLine || region;
-    const cleanSummonerName = summonerName.trim();
-    
-    onSearch(cleanSummonerName, finalTagLine, region);
+    if (summonerName && tagLine) {
+      onSearch(summonerName.trim(), tagLine.trim(), region);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="flex flex-col space-y-4">
+      <div className="flex gap-4 max-w-xl mx-auto w-full">
         <Input
-          placeholder="Summoner Name (e.g. name#tag)"
+          placeholder="Game Name#Tag"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="col-span-2"
+          className="w-64"
         />
-        
         <Select value={region} onValueChange={setRegion}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select region" />
+          <SelectTrigger className="w-24">
+            <SelectValue>
+              <span className="flex items-center gap-1">
+                {REGION_FLAGS[region]} {region.replace(/[0-9]/g, '')}
+              </span>
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(REGIONS).map(([key, name]) => (
+            {Object.entries(REGIONS).map(([key, value]) => (
               <SelectItem key={key} value={key}>
-                {name}
+                <span className="flex items-center gap-1">
+                  {REGION_FLAGS[key]} {key.replace(/[0-9]/g, '')}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-
-        <Button type="submit" disabled={loading} className="md:col-span-3">
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Searching...
-            </>
-          ) : (
-            'Search'
-          )}
+        <Button 
+          onClick={handleSearch}
+          disabled={loading || !input.includes('#')}
+        >
+          Search
         </Button>
       </div>
-    </form>
+    </div>
   );
 };

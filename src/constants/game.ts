@@ -1,15 +1,39 @@
 export const REGIONS = {
   NA1: 'North America',
-  EUW1: 'Europe West',
-  EUN1: 'Europe Nordic & East',
-  KR: 'Korea',
   BR1: 'Brazil',
+  EUN1: 'Europe Nordic & East',
+  EUW1: 'Europe West',
   JP1: 'Japan',
+  KR: 'Korea',
   LA1: 'Latin America North',
   LA2: 'Latin America South',
   OC1: 'Oceania',
+  PH2: 'Philippines',
+  RU: 'Russia',
+  SG2: 'Singapore',
+  TH2: 'Thailand',
   TR1: 'Turkey',
-  RU: 'Russia'
+  TW2: 'Taiwan',
+  VN2: 'Vietnam'
+} as const;
+
+export const REGION_FLAGS: Record<string, string> = {
+  NA1: '🇺🇸',
+  BR1: '🇧🇷',
+  EUN1: '🇪🇺',
+  EUW1: '🇪🇺',
+  JP1: '🇯🇵',
+  KR: '🇰🇷',
+  LA1: '🌎',
+  LA2: '🌎',
+  OC1: '🇦🇺',
+  PH2: '🇵🇭',
+  RU: '🇷🇺',
+  SG2: '🇸🇬',
+  TH2: '🇹🇭',
+  TR1: '🇹🇷',
+  TW2: '🇹🇼',
+  VN2: '🇻🇳'
 } as const;
 
 export const QUEUE_TYPES = {

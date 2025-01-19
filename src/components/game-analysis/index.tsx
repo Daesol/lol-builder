@@ -48,23 +48,19 @@ export const GameAnalysis = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6">
-          <SearchBar onSearch={handleSearch} loading={loading} />
-        </CardContent>
-      </Card>
+    <div className="space-y-6 max-w-full">
+      <SearchBar onSearch={handleSearch} loading={loading} />
+
+      {error && (
+        <div className="text-red-500 p-4 bg-red-50 rounded">
+          Error: {error}
+        </div>
+      )}
 
       {loading && (
         <div className="flex justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      )}
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
       )}
 
       {gameData?.liveGame && (

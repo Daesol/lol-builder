@@ -6,8 +6,15 @@ const nextConfig = {
     serverActions: true,
   },
   images: {
-    domains: ['ddragon.leagueoflegends.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'ddragon.leagueoflegends.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
   },
 };
 
-export default nextConfig; 
+module.exports = nextConfig; 
