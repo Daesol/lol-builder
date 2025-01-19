@@ -67,9 +67,9 @@ export const ItemAnalysis = ({ itemIds, winRates }: ItemAnalysisProps) => {
         return (
           <HoverCard key={itemId}>
             <HoverCardTrigger asChild>
-              <Card className="w-16 cursor-pointer hover:scale-105 transition-transform">
-                <CardContent className="p-2">
-                  <div className="relative w-12 h-12">
+              <Card className="w-10 cursor-pointer hover:scale-105 transition-transform">
+                <CardContent className="p-1">
+                  <div className="relative w-8 h-8">
                     <Image
                       src={itemUrl}
                       alt={item.name}
@@ -84,7 +84,7 @@ export const ItemAnalysis = ({ itemIds, winRates }: ItemAnalysisProps) => {
                     />
                   </div>
                   {winRate && (
-                    <p className="text-xs text-center mt-1 text-muted-foreground">
+                    <p className="text-[10px] text-center mt-0.5 text-muted-foreground">
                       {winRate}% WR
                     </p>
                   )}

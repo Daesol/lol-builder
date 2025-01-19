@@ -16,10 +16,10 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
   const avgDamage = analysis.matchCount ? Math.round(analysis.totalDamageDealt / analysis.matchCount).toLocaleString() : '0';
   const winRate = analysis.matchCount ? Math.round((analysis.wins / analysis.matchCount) * 100) : 0;
 
-  // Get most common items
+  // Get most common items (increase from 3 to 6)
   const commonItems = Object.entries(analysis.commonItems)
     .sort(([, a], [, b]) => b.count - a.count)
-    .slice(0, 3)
+    .slice(0, 6)  // Changed from 3 to 6
     .map(([itemId]) => Number(itemId));
 
   return (
@@ -32,8 +32,8 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
                 <Image 
                   src={ddragonApi.getChampionIconUrl(participant.championName)}
                   alt={participant.championName}
-                  width={48}
-                  height={48}
+                  width={40}  // Reduced from 48
+                  height={40} // Reduced from 48
                   className="rounded-lg"
                   unoptimized
                   onError={(e) => {
@@ -41,7 +41,7 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
                     img.src = '/images/unknown-champion.png';
                   }}
                 />
-                <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-background/80 rounded text-xs">
+                <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 bg-background/80 rounded text-[10px]">
                   {analysis.matchCount}
                 </div>
               </div>
@@ -58,7 +58,9 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">{participant.gameName}</div>
-                <div className="text-sm text-muted-foreground">#{participant.tagLine}</div>
+                <div className="text-sm text-muted-foreground">
+                  {participant.championName} • #{participant.tagLine}
+                </div>
               </div>
               <div className={`text-sm font-medium ${winRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
                 {winRate}% WR
@@ -83,7 +85,9 @@ export const ChampionAnalysis: React.FC<ChampionAnalysisProps> = ({
         </div>
 
         {commonItems.length > 0 && (
-          <ItemAnalysis itemIds={commonItems} />
+          <div className="mt-2">
+            <ItemAnalysis itemIds={commonItems} />
+          </div>
         )}
       </CardContent>
     </Card>
