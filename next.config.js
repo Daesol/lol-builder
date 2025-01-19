@@ -1,8 +1,13 @@
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   experimental: {
     serverActions: true,
   },
-}; 
+  images: {
+    domains: ['ddragon.leagueoflegends.com'],
+  },
+};
+
+export default nextConfig; 

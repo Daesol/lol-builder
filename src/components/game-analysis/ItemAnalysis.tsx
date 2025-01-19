@@ -61,6 +61,8 @@ export const ItemAnalysis = ({ itemIds, winRates }: ItemAnalysisProps) => {
         if (!item) return null;
 
         const winRate = getWinRate(itemId);
+        const itemUrl = ddragonApi.getItemIconUrl(itemId);
+        console.log('Item URL:', itemUrl); // Debug URL
 
         return (
           <HoverCard key={itemId}>
@@ -69,10 +71,16 @@ export const ItemAnalysis = ({ itemIds, winRates }: ItemAnalysisProps) => {
                 <CardContent className="p-2">
                   <div className="relative w-12 h-12">
                     <Image
-                      src={ddragonApi.getItemIconUrl(itemId)}
+                      src={itemUrl}
                       alt={item.name}
                       fill
                       className="object-cover rounded"
+                      unoptimized
+                      onError={(e) => {
+                        console.error(`Failed to load item image: ${itemUrl}`);
+                        const img = e.target as HTMLImageElement;
+                        img.src = '/images/unknown-item.png'; // Fallback image
+                      }}
                     />
                   </div>
                   {winRate && (
