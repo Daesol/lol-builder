@@ -93,26 +93,26 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
       setError(null); // Clear any previous errors
       
       try {
-        // Analyze participants sequentially instead of all at once
-        const analyses = [];
-        for (const participant of game.participants) {
-          try {
-            const analysis = await analyzeParticipant(participant);
-            analyses.push(analysis);
-          } catch (error) {
-            console.error(`Error analyzing ${participant.riotIdGameName}:`, error);
-            // Continue with other participants even if one fails
-            setError(prev => {
-              const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-              return prev ? `${prev}\n${errorMessage}` : errorMessage;
-            });
-          }
-        }
+        const analyses = await Promise.all(
+          game.participants.map(async (participant) => {
+            try {
+              return await analyzeParticipant(participant);
+            } catch (error) {
+              console.error(`Error analyzing ${participant.riotIdGameName}:`, error);
+              setError(prev => {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                return prev ? `${prev}\n${errorMessage}` : errorMessage;
+              });
+              return null;
+            }
+          })
+        );
 
-        if (analyses.length > 0) {
+        const validAnalyses = analyses.filter(Boolean);
+        if (validAnalyses.length > 0) {
           setAnalysis({
-            blueTeam: analyses.filter(p => p.teamId === 100),
-            redTeam: analyses.filter(p => p.teamId === 200)
+            blueTeam: validAnalyses.filter((p): p is ParticipantAnalysis => p !== null && p.teamId === 100),
+            redTeam: validAnalyses.filter((p): p is ParticipantAnalysis => p !== null && p.teamId === 200)
           });
         }
       } catch (error) {
