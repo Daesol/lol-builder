@@ -43,8 +43,10 @@ export class DataDragonAPI {
     return this.cache.items?.[itemId] || null;
   }
 
-  async getChampions() {
-    const response = await fetch(`${this.baseUrl}/data/en_US/champion.json`);
+  async getChampions(): Promise<Record<string, ChampionData>> {
+    const response = await fetch(
+      `${this.baseUrl}/cdn/${this.version}/data/en_US/champion.json`
+    );
     const data = await response.json();
     return data.data;
   }

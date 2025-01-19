@@ -5,8 +5,8 @@ let championMapping: Record<number, string> = {};
 
 export async function initChampionMapping() {
   try {
-    const champions = await ddragonApi.getChampions();
-    championMapping = Object.values(champions).reduce((acc, champion: ChampionData) => {
+    const championsData = await ddragonApi.getChampions();
+    championMapping = Object.entries(championsData).reduce((acc, [_, champion]) => {
       acc[parseInt(champion.key)] = champion.id;
       return acc;
     }, {} as Record<number, string>);
