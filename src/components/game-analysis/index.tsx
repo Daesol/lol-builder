@@ -1,11 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchBar } from './SearchBar';
 import { LiveGameDisplay } from './LiveGame';
 import type { ApiResponse } from '@/types/game';
@@ -29,11 +24,12 @@ export const GameAnalysis = () => {
         })}`
       );
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error(data.error || 'Search failed');
       }
 
-      const data = await response.json();
       setGameData(data);
 
       if (!data.liveGame) {
@@ -74,3 +70,6 @@ export const GameAnalysis = () => {
 };
 
 export default GameAnalysis;
+
+export { default as LiveGame, LiveGameDisplay } from './LiveGame';
+export * from './ChampionAnalysis';

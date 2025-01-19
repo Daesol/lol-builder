@@ -33,8 +33,11 @@ export class DataDragonAPI {
     return `${this.baseUrl}/${this.version}`;
   }
 
-  getChampionIconUrl(championId: string): string {
-    return `${this.baseUrl}/cdn/img/champion/${championId}.png`;
+  getChampionIconUrl(championName: string): string {
+    if (!championName || championName === 'Unknown') {
+      return '/images/unknown-champion.png';
+    }
+    return `${this.getBaseUrl()}/img/champion/${championName}.png`;
   }
 
   async getItems(): Promise<Record<number, ItemData>> {
