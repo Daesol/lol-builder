@@ -336,7 +336,8 @@ export class RiotAPI {
 const API_KEYS = [
   process.env.RIOT_API_KEY,
   process.env.RIOT_API_KEY_2,
-  process.env.RIOT_API_KEY_3
+  process.env.RIOT_API_KEY_3,
+  process.env.RIOT_API_KEY_4
 ].filter((key): key is string => typeof key === 'string');
 
 export const riotApi = new RiotAPI(API_KEYS);
