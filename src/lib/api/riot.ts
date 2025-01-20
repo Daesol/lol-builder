@@ -1,6 +1,7 @@
 // lib/api/riot.ts
 import { rateLimit, RateLimit } from '../utils/cache';
 import type { Account, Match, LiveGame, Summoner } from '@/types/game';
+import { BATCH_SIZE } from '@/constants/game';
 
 export interface AnalysisProgressData {
   total: number;
@@ -303,11 +304,10 @@ export class RiotAPI {
   // Add a method to handle sequential requests with rate limiting
   async fetchSequential<T>(urls: string[]): Promise<(T | null)[]> {
     const results: (T | null)[] = [];
-    const batchSize = 2;  // Reduce batch size from 3 to 2
     
-    for (let i = 0; i < urls.length; i += batchSize) {
-      const batch = urls.slice(i, i + batchSize);
-      console.log(`Processing batch ${i / batchSize + 1}/${Math.ceil(urls.length / batchSize)}`);
+    for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+      const batch = urls.slice(i, i + BATCH_SIZE);
+      console.log(`Processing batch ${i / BATCH_SIZE + 1}/${Math.ceil(urls.length / BATCH_SIZE)}`);
       
       try {
         // Process batch sequentially instead of in parallel

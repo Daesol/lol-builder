@@ -87,3 +87,6 @@ export const RATE_LIMITS = {
   REQUESTS_PER_SECOND: 20,
   REQUESTS_PER_MINUTE: 100
 } as const;
+
+export const BATCH_SIZE = 3; // Number of matches to process in parallel
+export const MATCHES_TO_ANALYZE = 20; // Total number of matches to analyze

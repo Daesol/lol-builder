@@ -4,9 +4,7 @@ import { riotApi } from '@/lib/api/riot';
 import { REGIONS } from '@/constants/game';
 import type { Match } from '@/types/game';
 import { analysisKV, type AnalysisSession } from '@/lib/kv';
-
-const MATCHES_TO_ANALYZE = 10;
-const BATCH_SIZE = 3;
+import { BATCH_SIZE, MATCHES_TO_ANALYZE } from '@/constants/game';
 
 export async function GET(request: Request) {
   try {
