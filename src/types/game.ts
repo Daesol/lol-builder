@@ -191,9 +191,8 @@ export interface ChampionPerformance {
   commonItems: Record<number, { count: number; winCount: number }>;
   commonRunes: {
     primaryTree: number;
-    primaryRunes: Record<number, { count: number }>;
     secondaryTree: number;
-    secondaryRunes: Record<number, { count: number }>;
+    keystone: number;
   };
 }
 
@@ -203,7 +202,6 @@ export interface LiveGameAnalysis {
 }
 
 export interface ChampionData {
-  version: string;
   id: string;
   key: string;
   name: string;
@@ -212,46 +210,5 @@ export interface ChampionData {
     full: string;
     sprite: string;
     group: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  };
-  info: {
-    attack: number;
-    defense: number;
-    magic: number;
-    difficulty: number;
-  };
-  tags: string[];
-  partype: string;
-  stats: {
-    hp: number;
-    hpperlevel: number;
-    mp: number;
-    mpperlevel: number;
-    movespeed: number;
-    armor: number;
-    armorperlevel: number;
-    spellblock: number;
-    spellblockperlevel: number;
-    attackrange: number;
-    hpregen: number;
-    hpregenperlevel: number;
-    mpregen: number;
-    mpregenperlevel: number;
-    crit: number;
-    critperlevel: number;
-    attackdamage: number;
-    attackdamageperlevel: number;
-    attackspeedperlevel: number;
-    attackspeed: number;
   };
 }
-
-export type ChampionsData = {
-  type: string;
-  format: string;
-  version: string;
-  data: Record<string, ChampionData>;
-};

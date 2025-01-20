@@ -47,9 +47,8 @@ export async function analyzeChampionPerformance(
     commonItems: {},
     commonRunes: {
       primaryTree: 0,
-      primaryRunes: {},
       secondaryTree: 0,
-      secondaryRunes: {}
+      keystone: 0
     }
   };
 
