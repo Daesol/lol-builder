@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const summoner = searchParams.get('summoner');
     const tagLine = searchParams.get('tagLine');
-    const region = searchParams.get('region') || 'NA1';
+    const region = searchParams.get('region')?.toUpperCase();
 
     console.log('Live game API called:', { summoner, tagLine, region });
 
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!summoner || !tagLine) {
+    if (!summoner || !tagLine || !region) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -50,7 +50,10 @@ export async function GET(request: Request) {
 
       const response: ApiResponse = {
         account,
-        summoner: summonerData,
+        summoner: {
+          name: summonerData.name,
+          summonerLevel: summonerData.summonerLevel
+        },
         liveGame,
         lastMatch: null,
         region
@@ -77,10 +80,10 @@ export async function GET(request: Request) {
       );
     }
   } catch (error) {
-    console.error('Route error:', error);
+    console.error('Live game API error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Route failed' },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: error instanceof Error && error.message.includes('not found') ? 404 : 500 }
     );
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -6,130 +6,154 @@ import { ChampionAnalysis } from './ChampionAnalysis';
 import type { LiveGameAnalysis, LiveGameParticipant, LiveGame as LiveGameType, ParticipantAnalysis } from '@/types/game';
 import { Loader2 } from 'lucide-react';
 import { initChampionMapping, getChampionName } from '@/lib/utils/champion';
+import { RateLimitError } from '@/lib/utils/errors';
 
 interface LiveGameDisplayProps {
   game: LiveGameType;
   region: string;
 }
 
-export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }) => {
+const LiveGame: React.FC<LiveGameDisplayProps> = ({ game, region }) => {
   const [analysis, setAnalysis] = useState<LiveGameAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState<Record<string, number>>({});
+  const [progress, setProgress] = useState<Record<string, { 
+    percent: number;
+    waiting?: boolean;
+    retryAfter?: number;
+  }>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     initChampionMapping();
   }, []);
 
-  useEffect(() => {
-    const analyzeParticipant = async (participant: LiveGameParticipant) => {
-      let sessionId = '';
-      let retryCount = 0;
-      const MAX_RETRIES = 3;
-      
-      while (true) {
-        try {
-          const response = await fetch(
-            `/api/champion-analysis?${new URLSearchParams({
-              puuid: participant.puuid,
-              championId: participant.championId.toString(),
-              region,
-              ...(sessionId ? { sessionId } : {})
-            })}`,
-            {
-              // Add timeout to prevent hanging requests
-              signal: AbortSignal.timeout(15000) // 15 second timeout
-            }
-          );
-
-          if (!response.ok) {
-            if (response.status === 504) {
-              // If we have a session ID, we can retry with it
-              if (sessionId && retryCount < MAX_RETRIES) {
-                retryCount++;
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
-                continue;
-              }
-              throw new Error(`Analysis timeout for ${participant.riotIdGameName}. Please try again.`);
-            }
-            throw new Error(await response.text());
-          }
-
-          const data = await response.json();
-          
-          if (data.sessionId) {
-            sessionId = data.sessionId;
-            setProgress(prev => ({
-              ...prev,
-              [participant.puuid]: (data.processed / data.total) * 100
-            }));
-            
-            if (!data.completed) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              continue;
-            }
-          }
-
-          return {
-            puuid: participant.puuid,
-            gameName: participant.riotIdGameName,
-            tagLine: participant.riotIdTagline,
-            teamId: participant.teamId,
-            championId: participant.championId,
-            championName: getChampionName(participant.championId),
-            analysis: data
-          };
-        } catch (error) {
-          if (error instanceof Error) {
-            // If we have a session ID, we can retry
-            if (sessionId && retryCount < MAX_RETRIES) {
-              retryCount++;
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              continue;
-            }
-            throw new Error(`Failed to analyze ${participant.riotIdGameName}: ${error.message}`);
-          }
-          throw error;
-        }
-      }
-    };
-
-    const analyzeParticipants = async () => {
-      setLoading(true);
-      setError(null); // Clear any previous errors
-      
+  const analyzeParticipant = async (participant: LiveGameParticipant) => {
+    let sessionId = '';
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+    
+    while (true) {
       try {
-        const analyses = await Promise.all(
-          game.participants.map(async (participant) => {
-            try {
-              return await analyzeParticipant(participant);
-            } catch (error) {
-              console.error(`Error analyzing ${participant.riotIdGameName}:`, error);
-              setError(prev => {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                return prev ? `${prev}\n${errorMessage}` : errorMessage;
-              });
-              return null;
-            }
-          })
+        const response = await fetch(
+          `/api/champion-analysis?${new URLSearchParams({
+            puuid: participant.puuid,
+            championId: participant.championId.toString(),
+            region,
+            ...(sessionId ? { sessionId } : {})
+          })}`,
+          {
+            // Add timeout to prevent hanging requests
+            signal: AbortSignal.timeout(15000) // 15 second timeout
+          }
         );
 
-        const validAnalyses = analyses.filter(Boolean);
-        if (validAnalyses.length > 0) {
-          setAnalysis({
-            blueTeam: validAnalyses.filter((p): p is ParticipantAnalysis => p !== null && p.teamId === 100),
-            redTeam: validAnalyses.filter((p): p is ParticipantAnalysis => p !== null && p.teamId === 200)
-          });
+        if (!response.ok) {
+          if (response.status === 504) {
+            // If we have a session ID, we can retry with it
+            if (sessionId && retryCount < MAX_RETRIES) {
+              retryCount++;
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+              continue;
+            }
+            throw new Error(`Analysis timeout for ${participant.riotIdGameName}. Please try again.`);
+          }
+          throw new Error(await response.text());
         }
-      } catch (error) {
-        console.error('Analysis failed:', error);
-        setError(error instanceof Error ? error.message : 'Analysis failed');
-      } finally {
-        setLoading(false);
-      }
-    };
 
+        const data = await response.json();
+        
+        if (data.sessionId) {
+          sessionId = data.sessionId;
+          setProgress(prev => ({
+            ...prev,
+            [participant.puuid]: {
+              percent: (data.processed / data.total) * 100,
+              waiting: false,
+              retryAfter: 0
+            }
+          }));
+          
+          if (!data.completed) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
+        }
+
+        return {
+          puuid: participant.puuid,
+          gameName: participant.riotIdGameName,
+          tagLine: participant.riotIdTagline,
+          teamId: participant.teamId,
+          championId: participant.championId,
+          championName: getChampionName(participant.championId),
+          analysis: data
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          // If we have a session ID, we can retry
+          if (sessionId && retryCount < MAX_RETRIES) {
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
+          if (error instanceof RateLimitError) {
+            setProgress(prev => ({
+              ...prev,
+              [participant.puuid]: {
+                percent: 0,
+                waiting: true,
+                retryAfter: error.retryAfter
+              }
+            }));
+            await new Promise(resolve => setTimeout(resolve, error.retryAfter * 1000));
+            setProgress(prev => ({
+              ...prev,
+              [participant.puuid]: {
+                percent: 0,
+                waiting: false,
+                retryAfter: 0
+              }
+            }));
+            return analyzeParticipant(participant); // Retry
+          }
+          throw new Error(`Failed to analyze ${participant.riotIdGameName}: ${error.message}`);
+        }
+        throw error;
+      }
+    }
+  };
+
+  const analyzeParticipants = async () => {
+    setLoading(true);
+    setError(null); // Clear any previous errors
+    
+    try {
+      setProgress({});
+      
+      const results = await Promise.all(
+        game.participants.map(async (participant, index) => {
+          const result = await analyzeParticipant(participant);
+          setProgress(prev => ({ ...prev, [participant.puuid]: { percent: 0, waiting: false, retryAfter: 0 } }));
+          return result;
+        })
+      );
+      
+      const validAnalyses = results.filter(Boolean);
+      if (validAnalyses.length > 0) {
+        setAnalysis({
+          blueTeam: validAnalyses.filter((p): p is ParticipantAnalysis => p !== null && p.teamId === 100),
+          redTeam: validAnalyses.filter((p): p is ParticipantAnalysis => p !== null && p.teamId === 200)
+        });
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      setError(error instanceof Error ? error.message : 'Analysis failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     analyzeParticipants();
   }, [game, region]);
 
@@ -149,11 +173,11 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
                     {participant.riotIdGameName}
                   </span>
                   <span className="text-sm text-muted-foreground w-14 text-right">
-                    {Math.round(progress[participant.puuid] || 0)}%
+                    {Math.round(progress[participant.puuid]?.percent || 0)}%
                   </span>
                 </div>
                 <Progress 
-                  value={progress[participant.puuid] || 0} 
+                  value={progress[participant.puuid]?.percent || 0} 
                   className="h-2"
                 />
               </div>
@@ -208,3 +232,6 @@ export const LiveGameDisplay: React.FC<LiveGameDisplayProps> = ({ game, region }
     </div>
   );
 };
+
+export { LiveGame as LiveGameDisplay };
+export default LiveGame;

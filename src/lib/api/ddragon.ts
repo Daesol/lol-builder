@@ -33,7 +33,8 @@ export class DataDragonAPI {
     return `${this.baseUrl}/${this.version}`;
   }
 
-  getChampionIconUrl(championName: string) {
+
+  getChampionIconUrl(championName: string): string {
     if (!championName || championName === 'Unknown') {
       return '/images/unknown-champion.png';
     }
