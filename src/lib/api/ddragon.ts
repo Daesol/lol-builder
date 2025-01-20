@@ -1,4 +1,4 @@
-import type { ItemData } from '@/types/game';
+import type { ItemData, ChampionsData, ChampionData } from '@/types/game';
 
 const DDRAGON_BASE_URL = 'https://ddragon.leagueoflegends.com';
 const FALLBACK_VERSION = '15.1.1';
@@ -33,12 +33,8 @@ export class DataDragonAPI {
     return `${this.baseUrl}/${this.version}`;
   }
 
-
-  getChampionIconUrl(championName: string): string {
-    if (!championName || championName === 'Unknown') {
-      return '/images/unknown-champion.png';
-    }
-    return `${this.getBaseUrl()}/img/champion/${championName}.png`;
+  getChampionIconUrl(championId: string): string {
+    return `${this.getBaseUrl()}/img/champion/${championId}.png`;
   }
 
   async getItems(): Promise<Record<number, ItemData>> {
@@ -60,8 +56,62 @@ export class DataDragonAPI {
     const items = await this.getItems();
     return items[itemId] || null;
   }
+
+  async getRunes(): Promise<Record<number, RuneData>> {
+    const response = await fetch(`${this.getBaseUrl()}/data/en_US/runesReforged.json`);
+    const runesData = await response.json();
+    
+    // Create a flat map of all runes
+    const runesMap: Record<number, RuneData> = {};
+    
+    runesData.forEach((tree: any) => {
+      // Add the tree itself
+      runesMap[tree.id] = {
+        id: tree.id,
+        name: tree.name,
+        icon: tree.icon,
+        key: tree.key
+      };
+      
+      // Add keystones and other runes
+      tree.slots.forEach((slot: any) => {
+        slot.runes.forEach((rune: any) => {
+          runesMap[rune.id] = {
+            id: rune.id,
+            name: rune.name,
+            icon: rune.icon,
+            key: rune.key
+          };
+        });
+      });
+    });
+    
+    return runesMap;
+  }
+
+  getRuneIconUrl(runeId: number): string {
+    return `${this.baseUrl}/cdn/img/${runeId}.png`;
+  }
+
+  getRuneTreeIconUrl(treeId: number): string {
+    return `${this.baseUrl}/cdn/img/perk-images/Styles/${treeId}.png`;
+  }
+
+  async getChampions(): Promise<Record<string, ChampionData>> {
+    const response = await fetch(`${this.getBaseUrl()}/data/en_US/champion.json`);
+    const data: ChampionsData = await response.json();
+    return data.data;
+  }
 }
 
 // Create and initialize the API
 export const ddragonApi = new DataDragonAPI();
 ddragonApi.init().catch(console.error);
+
+// Add this type
+interface RuneData {
+  id: number;
+  name: string;
+  icon: string;
+  key: string;
+}

@@ -1,7 +1,6 @@
 // lib/api/riot.ts
 import { rateLimit, RateLimit } from '../utils/cache';
 import type { Account, Match, LiveGame, Summoner } from '@/types/game';
-import { RateLimitError } from '../utils/errors';
 
 export interface AnalysisProgressData {
   total: number;
@@ -73,39 +72,69 @@ export class RiotAPI {
     };
   }
 
-  private async handleRateLimit(response: Response): Promise<void> {
-    if (response.status === 429) {
-      const retryAfter = parseInt(response.headers.get('retry-after') || '1');
-      throw new RateLimitError(retryAfter);
-    }
-  }
-
-  private async fetch<T>(url: string): Promise<T> {
-    const apiKey = this.getNextApiKey();
-    const rateLimit = this.rateLimits.get(apiKey);
-
-    try {
-      await rateLimit?.waitForToken();
+  private async fetch<T>(url: string): Promise<T | null> {
+    // Try each API key until we get a successful response
+    for (let attempt = 0; attempt < this.apiKeys.length * 2; attempt++) {
+      const currentKey = this.apiKeys[this.currentKeyIndex];
+      const currentLimiter = this.rateLimits.get(currentKey)!;
       
-      const response = await fetch(url, {
-        headers: { 'X-Riot-Token': apiKey }
-      });
+      try {
+        await currentLimiter.waitForAvailability();
+        
+        const response = await fetch(url, {
+          headers: {
+            'X-Riot-Token': currentKey
+          }
+        });
 
-      await this.handleRateLimit(response);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Log detailed response info for debugging
+        console.log('API Response:', {
+          url: url.split('?')[0], // Hide query params
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          key: this.currentKeyIndex + 1
+        });
+
+        if (response.status === 429) {
+          console.log(`Rate limit hit for key ${this.currentKeyIndex + 1}, rotating...`);
+          this.rotateApiKey();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+
+        if (response.status === 500) {
+          const errorText = await response.text();
+          console.error('Riot API 500 error:', {
+            url: url.split('?')[0],
+            error: errorText,
+            key: this.currentKeyIndex + 1
+          });
+          // Don't immediately retry on 500 errors
+          throw new Error(`Riot API error: ${errorText}`);
+        }
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} - ${response.statusText}`);
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error(`Request failed with key ${this.currentKeyIndex + 1}:`, {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          url: url.split('?')[0],
+          attempt: attempt + 1
+        });
+        
+        if (attempt === this.apiKeys.length * 2 - 1) {
+          throw error;
+        }
+        
+        this.rotateApiKey();
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-      
-      return response.json();
-    } catch (error) {
-      if (error instanceof RateLimitError) {
-        console.log(`Rate limited, waiting ${error.retryAfter} seconds`);
-        await new Promise(resolve => setTimeout(resolve, error.retryAfter * 1000));
-        return this.fetch<T>(url); // Retry after waiting
-      }
-      throw error;
     }
+    return null;
   }
 
   private rotateApiKey() {
@@ -301,12 +330,6 @@ export class RiotAPI {
     }
     return results;
   }
-
-  private getNextApiKey(): string {
-    const apiKey = this.apiKeys[this.currentKeyIndex];
-    this.rotateApiKey();
-    return apiKey;
-  }
 }
 
 // Initialize with multiple keys
@@ -314,7 +337,8 @@ const API_KEYS = [
   process.env.RIOT_API_KEY,
   process.env.RIOT_API_KEY_2,
   process.env.RIOT_API_KEY_3,
-  process.env.RIOT_API_KEY_4
+  process.env.RIOT_API_KEY_4,
+  process.env.RIOT_API_KEY_5
 ].filter((key): key is string => typeof key === 'string');
 
 export const riotApi = new RiotAPI(API_KEYS);

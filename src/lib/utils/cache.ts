@@ -4,16 +4,6 @@ export class RateLimit {
   private readonly shortTermWindow = 1000; // 1 second in ms
   private readonly longTermLimit = 100; // requests
   private readonly longTermWindow = 120000; // 2 minutes in ms
-  private tokens: number;
-  private lastRefill: number;
-  private readonly refillRate: number = 1000; // 1 second
-  private readonly bucketSize: number;
-
-  constructor(bucketSize = 20) {
-    this.tokens = bucketSize;
-    this.bucketSize = bucketSize;
-    this.lastRefill = Date.now();
-  }
 
   async waitForAvailability(): Promise<void> {
     const now = Date.now();
@@ -57,29 +47,6 @@ export class RateLimit {
       shortTerm: recentTimestamps.length,
       longTerm: this.timestamps.length
     };
-  }
-
-  async waitForToken(): Promise<void> {
-    this.refillTokens();
-    
-    if (this.tokens <= 0) {
-      const waitTime = this.refillRate - (Date.now() - this.lastRefill);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      this.refillTokens();
-    }
-    
-    this.tokens--;
-  }
-
-  private refillTokens(): void {
-    const now = Date.now();
-    const timePassed = now - this.lastRefill;
-    const newTokens = Math.floor(timePassed / this.refillRate);
-    
-    if (newTokens > 0) {
-      this.tokens = Math.min(this.bucketSize, this.tokens + newTokens);
-      this.lastRefill = now;
-    }
   }
 }
 

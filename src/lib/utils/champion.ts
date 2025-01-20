@@ -1,5 +1,7 @@
-import { champions } from '@/data/champions';
+import championsData from '@/data/champions.json';
+import type { ChampionsData } from '@/types/game';
 
+const champions = (championsData as ChampionsData).data;
 let championMapping: Record<number, string> = {};
 
 export function initChampionMapping() {
